@@ -15,3 +15,17 @@ Install dependencies with:
 ``` r
 remotes::install_deps(".", dependencies = TRUE)
 ```
+
+## Deploying
+
+To build a Docker image:
+
+``` r
+./docker/build
+```
+
+To run a built image:
+
+``` r
+ docker run -p 8888:8888 seroanalytics/serovizr:<branch-name>
+```

@@ -1,7 +1,8 @@
 build_routes <- function() {
-  pr <- porcelain::porcelain$new(validate=TRUE)
+  pr <- porcelain::porcelain$new(validate = TRUE)
   pr$handle(get_root())
   pr$handle(get_version())
+  pr$handle(post_dataset())
 }
 
 get_root <- function() {

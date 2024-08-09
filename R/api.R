@@ -3,7 +3,7 @@ target_get_root <- function() {
 }
 
 target_get_version <- function() {
-  jsonlite::toJSON(cache$versions, auto_unbox= TRUE)
+  jsonlite::toJSON(as.character(utils::packageVersion("serovizr")), auto_unbox= TRUE)
 }
 
 

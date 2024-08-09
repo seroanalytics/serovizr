@@ -11,7 +11,9 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports: 
     docopt,
-    lintr (>= 3.1.2),
-    porcelain
+    porcelain,
+    logger
 Remotes:
     reside-ic/porcelain,
+Suggests:
+    lintr (>= 3.1.2),
