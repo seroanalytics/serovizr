@@ -1,0 +1,17 @@
+Package: serovizr
+Title: R API for seroviz app
+Version: 0.0.0.9000
+Authors@R: 
+    person("Alex", "Hill", , "alex.hill@gmail.com", role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0003-8104-1890"))
+Description:
+License: GPL (>= 3)
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.1
+Imports: 
+    docopt,
+    lintr (>= 3.1.2),
+    porcelain
+Remotes:
+    reside-ic/porcelain,
