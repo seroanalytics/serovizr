@@ -1,20 +1,36 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
-  "type": "array",
-  "items": {
-    "type": "object",
-    "properties": {
-      "biomarker": {
+  "type": "object",
+  "properties": {
+    "variables": {
+      "type": "array",
+      "items": {
         "type": "string"
-      },
-      "value": {
-        "type": "number"
       }
     },
-    "additionalProperties": true,
-    "required": [
-      "biomarker",
-      "value"
-    ]
-  }
+    "data": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "biomarker": {
+            "type": "string"
+          },
+          "value": {
+            "type": "number"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "biomarker",
+          "value"
+        ]
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "data",
+    "variables"
+  ]
 }

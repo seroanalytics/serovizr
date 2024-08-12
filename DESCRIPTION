@@ -1,6 +1,6 @@
 Package: serovizr
 Title: R API for seroviz app
-Version: 0.0.0.9000
+Version: 0.0.0
 Authors@R: 
     person("Alex", "Hill", , "alex.hill@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0003-8104-1890"))
@@ -12,8 +12,10 @@ RoxygenNote: 7.3.1
 Imports: 
     docopt,
     porcelain,
-    logger
+    logger,
+    Rook
 Remotes:
     reside-ic/porcelain,
 Suggests:
     lintr (>= 3.1.2),
+    testthat

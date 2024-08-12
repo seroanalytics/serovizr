@@ -9,15 +9,27 @@
 R API for the SeroViz app. Based on the [porcelain](https://github.com/reside-ic/porcelain) framework.
 
 ## Developing
-
 Install dependencies with:
 
-``` r
+```r
 remotes::install_deps(".", dependencies = TRUE)
 ```
 
-## Deploying
+Start the API locally by running:
 
+```r
+devtools::load_all()
+serovizr:::main()
+```
+
+## Testing
+Run tests with:
+
+```r
+devtools::test()
+```
+
+## Deploying
 To build a Docker image:
 
 ``` r
