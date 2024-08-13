@@ -34,7 +34,15 @@ target_post_dataset <- function(req, res) {
 target_get_dataset <- function(name) {
   dat <- read_dataset(name)
   cols <- setdiff(colnames(dat), c("value", "biomarker", "day"))
-  list(variables = cols, data = jsonlite::toJSON(dat))
+  biomarkers <- unique(dat$biomarker)
+  variables <- list()
+  for (col in cols) {
+    lvls <- unique(dat[, col])
+    if (length(lvls) < 12) {
+      variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
+    }
+  }
+  list(variables = unname(variables), biomarkers = biomarkers)
 }
 
 target_get_datasets <- function() {
@@ -42,7 +50,9 @@ target_get_datasets <- function() {
   jsonlite::toJSON(files)
 }
 
-target_get_trace <- function(name, biomarker, facet, trace = "age") {
+target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
+  logger::log_info(paste("Requesting data from", name, "with biomarker", biomarker))
+  logger::log_info(paste("Filtering by facet variables", facet))
   dat <- read_dataset(name)
   cols <- colnames(dat)
   # facet_def <- strsplit(facet, ":")
@@ -55,9 +65,17 @@ target_get_trace <- function(name, biomarker, facet, trace = "age") {
   # dat <- dat[dat[facet_var] == facet_level & dat["biomarker"] == biomarker,]
   dat <- dat[dat["biomarker"] == biomarker,]
   dat$value <- log(dat$value)
-  groups <- split(dat, eval(parse(text = paste("~", trace))))
-  model_result <- lapply(groups, model_out)
-  raw <- lapply(groups, data_out)
+  if (length(trace) > 0) {
+    logger::log_info(paste("Disaggregating by trace variables", trace))
+    groups <- split(dat, eval(parse(text = paste("~", trace))))
+    model_result <- lapply(groups, model_out)
+    raw <- lapply(groups, data_out)
+  } else {
+    logger::log_info("Returning single trace")
+    browser()
+    model_result <- list(all = model_out(dat))
+    raw <- list(all = data_out(dat))
+  }
   list(model = model_result, raw = raw)
 }
 
@@ -73,7 +91,11 @@ read_dataset <- function(name) {
 }
 
 model_out <- function(dat) {
-  if (nrow(dat) > 1000) {
+  n <- nrow(dat)
+  if (n == 0) {
+    return(list(x = list(), y = list()))
+  }
+  if (n > 1000) {
     m <- mgcv::gam(value ~ s(day, bs = "cs"), data = dat, method = "REML")
   } else {
     m <- stats::loess(value ~ day, data = dat, span = 0.75)

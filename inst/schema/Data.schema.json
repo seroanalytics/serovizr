@@ -5,6 +5,12 @@
     "variables": {
       "type": "array",
       "items": {
+        "type": "object"
+      }
+    },
+    "biomarkers": {
+      "type": "array",
+      "items": {
         "type": "string"
       }
     },
@@ -30,7 +36,7 @@
   },
   "additionalProperties": false,
   "required": [
-    "data",
-    "variables"
+    "variables",
+    "biomarkers"
   ]
 }

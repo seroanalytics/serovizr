@@ -45,7 +45,8 @@ get_datasets <- function() {
 
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
-    "GET", "/dataset/<name>/<biomarker>/<facet>",
+    "GET", "/dataset/<name>/<biomarker>/",
     target_get_trace,
+    porcelain::porcelain_input_query(facet = "string", trace = "string"),
     returning = porcelain::porcelain_returning_json())
 }
