@@ -19,7 +19,9 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         plumber \
         porcelain \
         remotes \
-        rlang
+        Rook \
+        stringr \
+        tibble
 
 WORKDIR /serovizr
 

@@ -30,6 +30,7 @@ devtools::test()
 ```
 
 ## Deploying
+
 To build a Docker image:
 
 ``` r
@@ -41,3 +42,6 @@ To run a built image:
 ``` r
  docker run -p 8888:8888 seroanalytics/serovizr:<branch-name>
 ```
+
+For a complete list of available tags, see Dockerhub: 
+https://hub.docker.com/repository/docker/seroanalytics/serovizr/tags
