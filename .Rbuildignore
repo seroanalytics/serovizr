@@ -6,5 +6,5 @@
 ^docker$
 ^\.github$
 ^\.idea$
-^\uploads$
+^uploads$
 ^.lintr
