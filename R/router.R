@@ -7,7 +7,8 @@ build_routes <- function() {
 
   pr$handle(get_root())
   pr$handle(get_version())
-  pr$handle("POST", "/dataset/", function(req, res) target_post_dataset(req, res),
+  pr$handle("POST", "/dataset/",
+            function(req, res) target_post_dataset(req, res),
             serializer = plumber::serializer_unboxed_json())
   pr$handle(get_dataset())
   pr$handle(get_datasets())
@@ -16,17 +17,19 @@ build_routes <- function() {
 
 
 get_root <- function() {
-  porcelain::porcelain_endpoint$new("GET",
-                                    "/",
-                                    target_get_root,
-                                    returning = porcelain::porcelain_returning_json())
+  porcelain::porcelain_endpoint$new(
+    "GET",
+    "/",
+    target_get_root,
+    returning = porcelain::porcelain_returning_json())
 }
 
 get_version <- function() {
-  porcelain::porcelain_endpoint$new("GET",
-                                    "/version",
-                                    target_get_version,
-                                    returning = porcelain::porcelain_returning_json("Version"))
+  porcelain::porcelain_endpoint$new(
+    "GET",
+    "/version",
+    target_get_version,
+    returning = porcelain::porcelain_returning_json("Version"))
 }
 
 get_dataset <- function() {
@@ -38,14 +41,16 @@ get_dataset <- function() {
 
 get_datasets <- function() {
   porcelain::porcelain_endpoint$new(
-    "GET", "/datasets/",
+    "GET",
+    "/datasets/",
     target_get_datasets,
     returning = porcelain::porcelain_returning_json("Datasets"))
 }
 
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
-    "GET", "/dataset/<name>/<biomarker>/",
+    "GET",
+    "/dataset/<name>/<biomarker>/",
     target_get_trace,
     porcelain::porcelain_input_query(facet = "string", trace = "string"),
     returning = porcelain::porcelain_returning_json())

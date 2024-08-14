@@ -3,19 +3,23 @@ target_get_root <- function() {
 }
 
 target_get_version <- function() {
-  jsonlite::toJSON(as.character(utils::packageVersion("serovizr")), auto_unbox = TRUE)
+  jsonlite::toJSON(as.character(utils::packageVersion("serovizr")),
+                   auto_unbox = TRUE)
 }
 
 target_post_dataset <- function(req, res) {
   parsed <- Rook::Multipart$parse(req)
   file_body <- utils::read.csv(parsed$file$tempfile)
   filename <- parsed$file$filename
-  filename <- stringr::str_remove_all(filename, paste0(".", tools::file_ext(filename)))
+  filename <- stringr::str_remove_all(filename,
+                                      paste0(".", tools::file_ext(filename)))
   path <- file.path("uploads", filename)
   if (file.exists(path)) {
     res$status <- 400L
-    error <- list(error = "BAD_REQUEST", detail = paste("A dataset called", filename,
-                                                        "already exists. Please choose a unique name for this dataset."))
+    msg <- paste(filename, "already exists.",
+                 "Please choose a unique name for this dataset.")
+    error <- list(error = "BAD_REQUEST",
+                  detail = msg)
     return(list(status = "failure", errors = list(error), data = NULL))
   }
   required_cols <- c("value", "biomarker")
@@ -23,7 +27,8 @@ target_post_dataset <- function(req, res) {
   if (length(missing_cols) > 0) {
     res$status <- 400L
     error <- list(error = "BAD_REQUEST",
-                  detail = paste("Missing required columns:", paste(missing_cols, collapse = ", ")))
+                  detail = paste("Missing required columns:",
+                                 paste(missing_cols, collapse = ", ")))
     return(list(status = "failure", errors = list(error), data = NULL))
   }
 
@@ -51,7 +56,8 @@ target_get_datasets <- function() {
 }
 
 target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
-  logger::log_info(paste("Requesting data from", name, "with biomarker", biomarker))
+  logger::log_info(paste("Requesting data from", name,
+                         "with biomarker", biomarker))
   logger::log_info(paste("Filtering by facet variables", facet))
   dat <- read_dataset(name)
   cols <- colnames(dat)
@@ -63,7 +69,7 @@ target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
   #                             code = "BAD_REQUEST", status_code = 400L)
   # }
   # dat <- dat[dat[facet_var] == facet_level & dat["biomarker"] == biomarker,]
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   dat$value <- log(dat$value)
   if (length(trace) > 0) {
     logger::log_info(paste("Disaggregating by trace variables", trace))
