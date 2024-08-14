@@ -8,7 +8,7 @@ target_get_version <- function() {
 
 target_post_dataset <- function(req, res) {
   parsed <- Rook::Multipart$parse(req)
-  file_body <- read.csv(parsed$file$tempfile)
+  file_body <- utils::read.csv(parsed$file$tempfile)
   filename <- parsed$file$filename
   filename <- stringr::str_remove_all(filename, paste0(".", tools::file_ext(filename)))
   path <- file.path("uploads", filename)
@@ -27,7 +27,7 @@ target_post_dataset <- function(req, res) {
     return(list(status = "failure", errors = list(error), data = NULL))
   }
 
-  write.csv(file_body, path, row.names = FALSE)
+  utils::write.csv(file_body, path, row.names = FALSE)
   return(filename)
 }
 
@@ -85,7 +85,7 @@ read_dataset <- function(name) {
     porcelain::porcelain_stop(paste("Did not find dataset with name ", name),
                               code = "BAD_REQUEST", status_code = 404L)
   }
-  dat <- read.csv(path)
+  dat <- utils::read.csv(path)
   dat$value <- as.numeric(dat$value)
   dat
 }
@@ -102,7 +102,7 @@ model_out <- function(dat) {
   }
   range <- range(dat$day, na.rm = TRUE)
   xseq <- range[1]:range[2]
-  list(x = xseq, y = predict(m, tibble::data_frame(day = xseq)))
+  list(x = xseq, y = stats::predict(m, tibble::data_frame(day = xseq)))
 }
 
 data_out <- function(dat) {

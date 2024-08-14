@@ -1,4 +1,4 @@
 library(testthat)
 library(serovizr)
 
-test_check("mintr")
+test_check("serovizr")

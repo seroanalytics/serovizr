@@ -1,19 +1,24 @@
 Package: serovizr
-Title: R API for seroviz app
+Title: R API for SeroViz app
 Version: 0.0.0
 Authors@R: 
     person("Alex", "Hill", , "alex.hill@gmail.com", role = c("aut", "cre"),
            comment = c(ORCID = "0009-0003-8104-1890"))
-Description:
+Description: "R API for SeroViz app."
 License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
 Imports: 
     docopt,
-    porcelain,
+    jsonlite,
     logger,
-    Rook
+    mgcv,
+    plumber,
+    porcelain,
+    Rook,
+    stringr,
+    tibble
 Remotes:
     reside-ic/porcelain,
 Suggests:
