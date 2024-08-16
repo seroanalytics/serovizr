@@ -22,7 +22,9 @@
               "type": ["number", "null"]
             }
           }
-        }
+        },
+        "required": ["x", "y"],
+        "additionalProperties": false
       },
       "raw": {
         "type": "object",
@@ -39,8 +41,12 @@
               "type": ["number", "null"]
             }
           }
-        }
+        },
+        "required": ["x", "y"],
+        "additionalProperties": false
       }
-    }
+    },
+    "required": ["model", "raw"],
+    "additionalProperties": false
   }
 }
