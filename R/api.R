@@ -69,20 +69,22 @@ target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
   #                             code = "BAD_REQUEST", status_code = 400L)
   # }
   # dat <- dat[dat[facet_var] == facet_level & dat["biomarker"] == biomarker,]
-  dat <- dat[dat["biomarker"] == biomarker, ]
+  dat <- dat[dat["biomarker"] == biomarker,]
   dat$value <- log(dat$value)
   if (length(trace) > 0) {
     logger::log_info(paste("Disaggregating by trace variables", trace))
     groups <- split(dat, eval(parse(text = paste("~", trace))))
-    model_result <- lapply(groups, model_out)
-    raw <- lapply(groups, data_out)
+    return(lapply(seq_along(groups), function(i) {
+      list(name = jsonlite::unbox(nms[[g]]),
+           model = model_out(groups[[i]]),
+           raw = data_out(groups[[i]]))
+    }))
   } else {
     logger::log_info("Returning single trace")
-    browser()
-    model_result <- list(all = model_out(dat))
-    raw <- list(all = data_out(dat))
+    return(list(list(name = jsonlite::unbox("all"),
+                     model = model_out(dat),
+                     raw = data_out(dat))))
   }
-  list(model = model_result, raw = raw)
 }
 
 read_dataset <- function(name) {
