@@ -3,16 +3,19 @@ target_get_root <- function() {
 }
 
 target_get_version <- function() {
-  jsonlite::toJSON(as.character(utils::packageVersion("serovizr")),
-                   auto_unbox = TRUE)
+  jsonlite::unbox(as.character(utils::packageVersion("serovizr")))
 }
 
 target_post_dataset <- function(req, res) {
-  parsed <- Rook::Multipart$parse(req)
-  file_body <- utils::read.csv(parsed$file$tempfile)
-  filename <- parsed$file$filename
-  filename <- stringr::str_remove_all(filename,
-                                      paste0(".", tools::file_ext(filename)))
+  logger::log_info("Parsing multipart form request")
+  parsed <- mime::parse_multipart(req)
+  file_body <- utils::read.csv(parsed$file$datapath)
+  filename <- parsed$file$name
+  file_ext <- tools::file_ext(filename)
+  if (nchar(file_ext) > 0) {
+    filename <- stringr::str_remove_all(filename,
+                                        paste0(".", file_ext))
+  }
   path <- file.path("uploads", filename)
   if (file.exists(path)) {
     res$status <- 400L
@@ -32,8 +35,9 @@ target_post_dataset <- function(req, res) {
     return(list(status = "failure", errors = list(error), data = NULL))
   }
 
+  logger::log_info(paste("Saving dataset", filename, "to disk"))
   utils::write.csv(file_body, path, row.names = FALSE)
-  return(filename)
+  porcelain:::response_success(jsonlite::unbox(filename))
 }
 
 target_get_dataset <- function(name) {
@@ -51,8 +55,7 @@ target_get_dataset <- function(name) {
 }
 
 target_get_datasets <- function() {
-  files <- list.files("uploads")
-  jsonlite::toJSON(files)
+  list.files("uploads")
 }
 
 target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
@@ -74,8 +77,9 @@ target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
   if (length(trace) > 0) {
     logger::log_info(paste("Disaggregating by trace variables", trace))
     groups <- split(dat, eval(parse(text = paste("~", trace))))
+    nms <- names(groups)
     return(lapply(seq_along(groups), function(i) {
-      list(name = jsonlite::unbox(nms[[g]]),
+      list(name = jsonlite::unbox(nms[[i]]),
            model = model_out(groups[[i]]),
            raw = data_out(groups[[i]]))
     }))

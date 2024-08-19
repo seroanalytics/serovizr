@@ -1,0 +1,5 @@
+"pid","day","biomarker","value","age","sex"
+"01",0,"abunits_spike",300.1,"[18,49)","Female"
+"01",0,"abunits_NCP",30.1,"[18,49)","Female"
+"01",10,"abunits_spike",180.5,"[18,49)","Female"
+"01",10,"abunits_NCP",18.5,"[18,49)","Female"
