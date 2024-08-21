@@ -91,7 +91,7 @@ test_that("can get uploaded dataset metadata with default xcol", {
   res <- router$call(request)
   expect_equal(res$status, 200)
 
-  res <- router$request("GET", "/dataset/testdata")
+  res <- router$request("GET", "/dataset/testdata/")
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -112,7 +112,7 @@ test_that("can get uploaded dataset metadata with xcol", {
   res <- router$call(request)
   expect_equal(res$status, 200)
 
-  res <- router$request("GET", "/dataset/testdata")
+  res <- router$request("GET", "/dataset/testdata/")
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))

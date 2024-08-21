@@ -42,7 +42,7 @@ local_POST_dataset_request <- function(dat, filename, xcol = "day",
     }
   }, envir = env)
 
-  make_req("POST", "/dataset",
+  make_req("POST", "/dataset/",
            body = request_body,
            CONTENT_LENGTH = nchar(request_body),
            CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
@@ -67,7 +67,7 @@ local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
     }
   }, envir = env)
 
-  make_req("POST", "/dataset",
+  make_req("POST", "/dataset/",
            body = request_body,
            CONTENT_LENGTH = nchar(request_body),
            CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")

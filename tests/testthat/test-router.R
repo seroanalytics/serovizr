@@ -19,7 +19,7 @@ test_that("GET /version", {
   expect_equal(res, jsonlite::unbox(as.character(packageVersion("serovizr"))))
 
   router <- build_routes()
-  res_api <- router$request("GET", "/version")
+  res_api <- router$request("GET", "/version/")
   expect_equal(res_api$status, 200)
   body <- jsonlite::fromJSON(res_api$body)
   expect_equal(unclass(res), unclass(body$data))
@@ -51,7 +51,7 @@ test_that("GET /datasets", {
   local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
                     "anotherdataset")
   router <- build_routes()
-  res <- router$request("GET", "/datasets")
+  res <- router$request("GET", "/datasets/")
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data, c("anotherdataset", "testdataset"))
@@ -65,7 +65,7 @@ test_that("GET /dataset<name>", {
                                sex = c("M", "F")),
                     "testdataset")
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset")
+  res <- router$request("GET", "/dataset/testdataset/")
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -89,7 +89,7 @@ test_that("GET /dataset/<name>/trace/<biomarker>", {
   })
   router <- build_routes()
   set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab")
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/")
   expect_equal(res$status, 200)
   expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
                             "pseudoinverse used at 0.96",
@@ -106,4 +106,10 @@ test_that("GET /dataset/<name>/trace/<biomarker>", {
   ))
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data, jsonlite::fromJSON(expected))
+})
+
+test_that("requests without trailing slash are redirected", {
+  router <- build_routes()
+  res_api <- router$request("GET", "/version")
+  expect_equal(res_api$status, 307)
 })

@@ -1,6 +1,6 @@
 test_that("GET /dataset<name> returns 404 if dataset not found", {
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset")
+  res <- router$request("GET", "/dataset/testdataset/")
   expect_equal(res$status, 404)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
@@ -10,7 +10,7 @@ test_that("GET /dataset<name> returns 404 if dataset not found", {
 
 test_that("GET /trace/<biomarker> returns 404 if dataset not found", {
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/trace/ab")
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/")
   expect_equal(res$status, 404)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
@@ -30,7 +30,7 @@ test_that("can get trace for uploaded dataset with xcol", {
   router <- build_routes()
   res <- router$call(request)
   expect_equal(res$status, 200)
-  res <- router$request("GET", "/dataset/testdata/trace/ab")
+  res <- router$request("GET", "/dataset/testdata/trace/ab/")
   expect_equal(res$status, 200)
   expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
                             "pseudoinverse used at 0.96",
@@ -62,7 +62,7 @@ test_that("can get disgagregated traces", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/trace/ab",
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(disaggregate = "sex"))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
@@ -89,7 +89,7 @@ test_that("can get filtered traces", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/trace/ab",
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(filter = "sex:M"))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
@@ -109,7 +109,7 @@ test_that("can get disgagregated and filtered traces", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/trace/ab",
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(disaggregate = "age", filter = "sex:M"))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
