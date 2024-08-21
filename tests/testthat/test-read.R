@@ -80,7 +80,7 @@ test_that("can get disgagregated traces", {
   expect_equal(data$model[2, "y"], list(rep(1, 9)))
 })
 
-test_that("can get filtered traces", {
+test_that("can get filtered trace", {
   dat <- data.frame(biomarker = "ab",
                     value = rep(c(0, 1, 2, 3), 5),
                     day = 1:20,
@@ -95,12 +95,32 @@ test_that("can get filtered traces", {
   body <- jsonlite::fromJSON(res$body)
   data <- body$data
   expect_equal(nrow(data), 1)
-  expect_equal(data$name, "all")
+  expect_equal(data$name, "sex:M")
   expect_equal(data$raw[1, "x"], list(c(1, 3, 5, 7, 9, 11, 13, 15, 17, 19)))
   expect_equal(data$raw[1, "y"], list(c(0, 2, 0, 2, 0, 2, 0, 2, 0, 2)))
 })
 
-test_that("can get disgagregated and filtered traces", {
+test_that("can get trace filtered by multiple variables", {
+  dat <- data.frame(biomarker = "ab",
+                    value = rep(c(0, 1, 2, 3), 5),
+                    day = 1:20,
+                    age = rep(c("0-5", "0-5", "5+", "5+"), 5),
+                    sex = c("M", "F"))
+  local_add_dataset(dat,
+                    "testdataset")
+  router <- build_routes()
+  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
+                        query = list(filter = "sex%3AM%2Bage%3A0-5"))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(nrow(data), 1)
+  expect_equal(data$name, "sex:M+age:0-5")
+  expect_equal(data$raw[1, "x"], list(c(1, 5, 9, 13, 17)))
+  expect_equal(data$raw[1, "y"], list(c(0, 0, 0, 0, 0)))
+})
+
+test_that("can get disaggregated and filtered traces", {
   dat <- data.frame(biomarker = "ab",
                     value = rep(c(0, 1, 2, 3), 5),
                     day = 1:20,

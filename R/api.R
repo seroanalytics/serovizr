@@ -86,27 +86,21 @@ target_get_trace <- function(name,
                              biomarker,
                              filter = NULL,
                              disaggregate = NULL) {
-  str(disaggregate)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  logger::log_info(paste("Filtering by variables:", filter))
   dataset <- read_dataset(name)
   dat <- dataset$data
   xcol <- dataset$xcol
   cols <- colnames(dat)
   if (!is.null(filter)) {
-    filter_def <- strsplit(filter, ":")
-    filter_var <- filter_def[[1]][1]
-    filter_level <- filter_def[[1]][2]
-    if (!(filter_var %in% cols)) {
-      porcelain::porcelain_stop(paste("Column",
-                                      filter_var,
-                                      "not found in data"),
-                                code = "BAD_REQUEST", status_code = 400L)
-    }
-    dat <- dat[dat[filter_var] == filter_level, ]
+    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
+    logger::log_info(paste("Filtering by variables:", paste(filters,
+                                                            collapse = ", ")))
+   for (f in filters) {
+     dat <- apply_filter(f, dat, cols)
+   }
   }
-  dat <- dat[dat["biomarker"] == biomarker, ]
+  dat <- dat[dat["biomarker"] == biomarker,]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -121,7 +115,8 @@ target_get_trace <- function(name,
   } else {
     logger::log_info("Returning single trace")
     model <- with_warnings(model_out(dat, xcol))
-    return(list(list(name = jsonlite::unbox("all"),
+    nm <- ifelse(is.null(filter), "all", filter)
+    return(list(list(name = jsonlite::unbox(nm),
                      model = model$output,
                      raw = data_out(dat, xcol),
                      warnings = model$warnings)))
@@ -160,4 +155,17 @@ model_out <- function(dat, xcol) {
 
 data_out <- function(dat, xcol) {
   list(x = dat[, xcol], y = dat$value)
+}
+
+apply_filter <- function(filter, dat, cols) {
+  filter_def <- strsplit(filter, ":")
+  filter_var <- filter_def[[1]][1]
+  filter_level <- filter_def[[1]][2]
+  if (!(filter_var %in% cols)) {
+    porcelain::porcelain_stop(paste("Column",
+                                    filter_var,
+                                    "not found in data"),
+                              code = "BAD_REQUEST", status_code = 400L)
+  }
+  dat[dat[filter_var] == filter_level,]
 }

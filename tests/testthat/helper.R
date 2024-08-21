@@ -59,7 +59,7 @@ local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
                          "1234", EOL,
                          boundary, EOL,
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
-                         xcol, EOL,
+                         "day", EOL,
                          boundary, "--")
   filepath <- file.path("uploads", filename)
   withr::defer({
