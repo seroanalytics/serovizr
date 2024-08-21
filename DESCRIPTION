@@ -14,13 +14,16 @@ Imports:
     jsonlite,
     logger,
     mgcv,
+    mime,
     plumber,
     porcelain,
-    Rook,
     stringr,
     tibble
 Remotes:
     reside-ic/porcelain,
 Suggests:
+    fs,
     lintr (>= 3.1.2),
-    testthat
+    readr,
+    testthat,
+    withr
