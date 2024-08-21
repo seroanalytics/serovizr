@@ -9,6 +9,14 @@ target_get_version <- function() {
 target_post_dataset <- function(req, res) {
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
+  xcol <- parsed$xcol
+  if (is.null(parsed$file$type) || parsed$file$type != "text/csv") {
+    res$status <- 400L
+    msg <- "Invalid file type; please upload file of type text/csv."
+    error <- list(error = "BAD_REQUEST",
+                  detail = msg)
+    return(list(status = "failure", errors = list(error), data = NULL))
+  }
   file_body <- utils::read.csv(parsed$file$datapath)
   filename <- parsed$file$name
   file_ext <- tools::file_ext(filename)
@@ -25,7 +33,7 @@ target_post_dataset <- function(req, res) {
                   detail = msg)
     return(list(status = "failure", errors = list(error), data = NULL))
   }
-  required_cols <- c("value", "biomarker")
+  required_cols <- c("value", "biomarker", xcol)
   missing_cols <- required_cols[!(required_cols %in% colnames(file_body))]
   if (length(missing_cols) > 0) {
     res$status <- 400L
@@ -36,14 +44,28 @@ target_post_dataset <- function(req, res) {
   }
 
   logger::log_info(paste("Saving dataset", filename, "to disk"))
-  utils::write.csv(file_body, path, row.names = FALSE)
+  dir.create(path)
+  utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
+  write(xcol, file.path(path, "xcol"))
   porcelain:::response_success(jsonlite::unbox(filename))
 }
 
 target_get_dataset <- function(name) {
-  dat <- read_dataset(name)
-  cols <- setdiff(colnames(dat), c("value", "biomarker", "day"))
+  logger::log_info(paste("Requesting metadata for dataset:", name))
+  dataset <- read_dataset(name)
+  logger::log_info(paste("Found dataset:", name))
+  dat <- dataset$data
+  xcol <- dataset$xcol
+  cols <- setdiff(colnames(dat), c("value", "biomarker", xcol))
+  if (length(cols) == 0) {
+    logger::log_info("No covariates detected")
+  } else {
+    logger::log_info(paste("Detected covariates:",
+                           paste(cols, collapse = ", ")))
+  }
   biomarkers <- unique(dat$biomarker)
+  logger::log_info(paste("Detected biomarkers:",
+                         paste(biomarkers, collapse = ", ")))
   variables <- list()
   for (col in cols) {
     lvls <- unique(dat[, col])
@@ -51,7 +73,9 @@ target_get_dataset <- function(name) {
       variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
     }
   }
-  list(variables = unname(variables), biomarkers = biomarkers)
+  list(variables = unname(variables),
+       biomarkers = biomarkers,
+       xcol = jsonlite::unbox(xcol))
 }
 
 target_get_datasets <- function() {
@@ -62,7 +86,7 @@ target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
   logger::log_info(paste("Filtering by facet variables", facet))
-  dat <- read_dataset(name)
+  dat <- read_dataset(name)$dat
   cols <- colnames(dat)
   # facet_def <- strsplit(facet, ":")
   # facet_var <- facet_def[[1]][1]
@@ -97,9 +121,10 @@ read_dataset <- function(name) {
     porcelain::porcelain_stop(paste("Did not find dataset with name ", name),
                               code = "BAD_REQUEST", status_code = 404L)
   }
-  dat <- utils::read.csv(path)
+  dat <- utils::read.csv(file.path(path, "data"))
   dat$value <- as.numeric(dat$value)
-  dat
+  xcol <- readLines(file.path(path, "xcol"))
+  list(data = dat, xcol = xcol)
 }
 
 model_out <- function(dat) {

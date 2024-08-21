@@ -14,29 +14,14 @@
         "type": "string"
       }
     },
-    "data": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "biomarker": {
-            "type": "string"
-          },
-          "value": {
-            "type": "number"
-          }
-        },
-        "additionalProperties": true,
-        "required": [
-          "biomarker",
-          "value"
-        ]
-      }
+    "xcol": {
+      "type": "string"
     }
   },
   "additionalProperties": false,
   "required": [
     "variables",
-    "biomarkers"
+    "biomarkers",
+    "xcol"
   ]
 }
