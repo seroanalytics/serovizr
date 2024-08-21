@@ -116,6 +116,7 @@ target_get_trace <- function(name,
     logger::log_info("Returning single trace")
     model <- with_warnings(model_out(dat, xcol))
     nm <- ifelse(is.null(filter), "all", filter)
+    str(nm)
     return(list(list(name = jsonlite::unbox(nm),
                      model = model$output,
                      raw = data_out(dat, xcol),
