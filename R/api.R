@@ -116,7 +116,6 @@ target_get_trace <- function(name,
     logger::log_info("Returning single trace")
     model <- with_warnings(model_out(dat, xcol))
     nm <- ifelse(is.null(filter), "all", filter)
-    str(nm)
     return(list(list(name = jsonlite::unbox(nm),
                      model = model$output,
                      raw = data_out(dat, xcol),
@@ -149,7 +148,7 @@ model_out <- function(dat, xcol) {
   }
   range <- range(dat[, xcol], na.rm = TRUE)
   xseq <- range[1]:range[2]
-  xdf <- tibble::data_frame(xcol = xseq)
+  xdf <- tibble::tibble(xcol = xseq)
   names(xdf) <- xcol
   list(x = xseq, y = stats::predict(m, xdf))
 }

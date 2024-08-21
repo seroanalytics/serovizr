@@ -50,9 +50,6 @@ test_that("can get trace for uploaded dataset with xcol", {
                                                            jsonlite::unbox))
   ))
   body <- jsonlite::fromJSON(res$body)
-  for (warning in body$data$warnings[[1]]) {
-    str(warning)
-  }
   expect_equal(body$data, jsonlite::fromJSON(expected))
 })
 
