@@ -49,6 +49,7 @@ local_POST_dataset_request <- function(dat, filename, xcol = "day",
 }
 
 local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
+  filename <- "baddata"
   EOL <- "\r\n"
   boundary <- "------WebKitFormBoundaryvbfCGA1r00d8B0Vv"
   request_body <- paste0(boundary, EOL,
