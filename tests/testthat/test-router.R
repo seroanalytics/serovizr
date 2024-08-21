@@ -57,7 +57,7 @@ test_that("GET /datasets", {
   expect_equal(body$data, c("anotherdataset", "testdataset"))
 })
 
-test_that("GET /dataset", {
+test_that("GET /dataset<name>", {
   local_add_dataset(data.frame(biomarker = c("ab", "ba"),
                                value = 1,
                                day = 1:10,
@@ -68,9 +68,42 @@ test_that("GET /dataset", {
   res <- router$request("GET", "/dataset/testdataset")
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
-  str(body$data$variables)
   expect_equal(body$data$variables$name, c("age", "sex"))
   expect_equal(body$data$variables$levels, list(c("0-5"), c("M", "F")))
   expect_equal(body$data$biomarkers, c("ab", "ba"))
   expect_equal(body$data$xcol, "day")
+})
+
+test_that("GET /dataset/<name>/trace/<biomarker>", {
+  dat <- data.frame(biomarker = c("ab", "ba"),
+                    value = c(1, 1.5, 2, 3, 3.2, 4, 5, 6, 6.1, 7),
+                    day = 1:10,
+                    age = "0-5",
+                    sex = c("M", "F"))
+  local_add_dataset(dat,
+                    "testdataset")
+  set.seed(1)
+  suppressWarnings({
+    m <- stats::loess(value ~ day, data = dat[dat["biomarker"] == "ab",], span = 0.75)
+    model <- list(x = 1:9, y = stats::predict(m, tibble::data_frame(day = 1:9)))
+  })
+  router <- build_routes()
+  set.seed(1)
+  res <- router$request("GET", "/dataset/testdataset/trace/ab")
+  expect_equal(res$status, 200)
+  expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
+                            "pseudoinverse used at 0.96",
+                            "neighborhood radius 4.04",
+                            "reciprocal condition number  0",
+                            "There are other near singularities as well. 16.322")
+  expected <- jsonlite::toJSON(list(list(name = jsonlite::unbox("all"),
+                                         model = model,
+                                         raw = list(
+                                           x = c(1, 3, 5, 7, 9),
+                                           y = c(1, 2, 3.2, 5, 6.1)),
+                                         warnings = lapply(expected_warnings,
+                                                           jsonlite::unbox))
+  ))
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$data, jsonlite::fromJSON(expected))
 })

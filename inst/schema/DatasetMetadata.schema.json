@@ -5,7 +5,7 @@
     "variables": {
       "type": "array",
       "items": {
-        "type": "object"
+        "$ref": "Variable.schema.json"
       }
     },
     "biomarkers": {

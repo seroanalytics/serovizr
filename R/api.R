@@ -82,44 +82,55 @@ target_get_datasets <- function() {
   list.files("uploads")
 }
 
-target_get_trace <- function(name, biomarker, facet = NULL, trace = NULL) {
+target_get_trace <- function(name,
+                             biomarker,
+                             filter = NULL,
+                             disaggregate = NULL) {
+  str(disaggregate)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  logger::log_info(paste("Filtering by facet variables", facet))
-  dat <- read_dataset(name)$dat
+  logger::log_info(paste("Filtering by variables:", filter))
+  dataset <- read_dataset(name)
+  dat <- dataset$data
+  xcol <- dataset$xcol
   cols <- colnames(dat)
-  # facet_def <- strsplit(facet, ":")
-  # facet_var <- facet_def[[1]][1]
-  # facet_level <- facet_def[[1]][2]
-  # if (!(facet_var %in% cols)) {
-  #   porcelain::porcelain_stop(paste("Column", facet_var, "not found in data"),
-  #                             code = "BAD_REQUEST", status_code = 400L)
-  # }
-  # dat <- dat[dat[facet_var] == facet_level & dat["biomarker"] == biomarker,]
+  if (!is.null(filter)) {
+    filter_def <- strsplit(filter, ":")
+    filter_var <- filter_def[[1]][1]
+    filter_level <- filter_def[[1]][2]
+    if (!(filter_var %in% cols)) {
+      porcelain::porcelain_stop(paste("Column", filter_var, "not found in data"),
+                                code = "BAD_REQUEST", status_code = 400L)
+    }
+    dat <- dat[dat[filter_var] == filter_level,]
+  }
   dat <- dat[dat["biomarker"] == biomarker,]
-  dat$value <- log(dat$value)
-  if (length(trace) > 0) {
-    logger::log_info(paste("Disaggregating by trace variables", trace))
-    groups <- split(dat, eval(parse(text = paste("~", trace))))
+  if (length(disaggregate) > 0) {
+    logger::log_info(paste("Disaggregating by variables:", disaggregate))
+    groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
     nms <- names(groups)
     return(lapply(seq_along(groups), function(i) {
+      model <- withWarnings(model_out(groups[[i]], xcol))
       list(name = jsonlite::unbox(nms[[i]]),
-           model = model_out(groups[[i]]),
-           raw = data_out(groups[[i]]))
+           model = model$output,
+           raw = data_out(groups[[i]], xcol),
+           warnings = model$warnings)
     }))
   } else {
     logger::log_info("Returning single trace")
+    model <- withWarnings(model_out(dat, xcol))
     return(list(list(name = jsonlite::unbox("all"),
-                     model = model_out(dat),
-                     raw = data_out(dat))))
+                     model = model$output,
+                     raw = data_out(dat, xcol),
+                     warnings = model$warnings)))
   }
 }
 
 read_dataset <- function(name) {
   path <- file.path("uploads", name)
   if (!file.exists(path)) {
-    porcelain::porcelain_stop(paste("Did not find dataset with name ", name),
-                              code = "BAD_REQUEST", status_code = 404L)
+    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
+                              code = "DATASET_NOT_FOUND", status_code = 404L)
   }
   dat <- utils::read.csv(file.path(path, "data"))
   dat$value <- as.numeric(dat$value)
@@ -127,21 +138,24 @@ read_dataset <- function(name) {
   list(data = dat, xcol = xcol)
 }
 
-model_out <- function(dat) {
+model_out <- function(dat, xcol) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
   }
   if (n > 1000) {
-    m <- mgcv::gam(value ~ s(day, bs = "cs"), data = dat, method = "REML")
+    m <- mgcv::gam(value ~ s(eval(parse(text = xcol)), bs = "cs"),
+                   data = dat, method = "REML")
   } else {
-    m <- stats::loess(value ~ day, data = dat, span = 0.75)
+    m <- stats::loess(value ~ eval(parse(text = xcol)), data = dat, span = 0.75)
   }
-  range <- range(dat$day, na.rm = TRUE)
+  range <- range(dat[, xcol], na.rm = TRUE)
   xseq <- range[1]:range[2]
-  list(x = xseq, y = stats::predict(m, tibble::data_frame(day = xseq)))
+  xdf <- tibble::data_frame(xcol = xseq)
+  names(xdf) <- xcol
+  list(x = xseq, y = stats::predict(m, xdf))
 }
 
-data_out <- function(dat) {
-  list(x = dat$day, y = dat$value)
+data_out <- function(dat, xcol) {
+  list(x = dat[, xcol], y = dat$value)
 }
