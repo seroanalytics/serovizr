@@ -99,18 +99,20 @@ target_get_trace <- function(name,
     filter_var <- filter_def[[1]][1]
     filter_level <- filter_def[[1]][2]
     if (!(filter_var %in% cols)) {
-      porcelain::porcelain_stop(paste("Column", filter_var, "not found in data"),
+      porcelain::porcelain_stop(paste("Column",
+                                      filter_var,
+                                      "not found in data"),
                                 code = "BAD_REQUEST", status_code = 400L)
     }
-    dat <- dat[dat[filter_var] == filter_level,]
+    dat <- dat[dat[filter_var] == filter_level, ]
   }
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
     nms <- names(groups)
     return(lapply(seq_along(groups), function(i) {
-      model <- withWarnings(model_out(groups[[i]], xcol))
+      model <- with_warnings(model_out(groups[[i]], xcol))
       list(name = jsonlite::unbox(nms[[i]]),
            model = model$output,
            raw = data_out(groups[[i]], xcol),
@@ -118,7 +120,7 @@ target_get_trace <- function(name,
     }))
   } else {
     logger::log_info("Returning single trace")
-    model <- withWarnings(model_out(dat, xcol))
+    model <- with_warnings(model_out(dat, xcol))
     return(list(list(name = jsonlite::unbox("all"),
                      model = model$output,
                      raw = data_out(dat, xcol),
