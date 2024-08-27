@@ -1,8 +1,15 @@
 build_routes <- function() {
+  if (!dir.exists("uploads")) {
+    dir.create("uploads")
+  }
   plumber::options_plumber(trailingSlash = TRUE)
   pr <- porcelain::porcelain$new(validate = TRUE)
   pr$registerHook(stage = "preserialize", function(data, req, res, value) {
-    res$setHeader("Access-Control-Allow-Origin", "http://localhost:3000")
+    if (!is.null(req$HTTP_ORIGIN) &&
+      req$HTTP_ORIGIN %in% c("http://localhost:3000", "http://localhost")) {
+      # allow local app and integration tests to access endpoints
+      res$setHeader("Access-Control-Allow-Origin", req$HTTP_ORIGIN)
+    }
     value
   })
 
