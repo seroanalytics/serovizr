@@ -71,15 +71,13 @@ test_that("uploading wrong file type returns 400", {
 })
 
 test_that("saves file and xcol", {
-  router <- build_routes()
-  set.seed(1)
-  session_id <- generate_session_id()
-  set.seed(1) #so that same id generated when processing request
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    time = 1:10,
                                                    value = 1),
                                         filename = "testdataset",
-                                        xcol = "time")
+                                        xcol = "time",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
   dat <- utils::read.csv(file.path("uploads", session_id, "/testdataset/data"))
@@ -90,13 +88,13 @@ test_that("saves file and xcol", {
 })
 
 test_that("can get uploaded dataset metadata with default xcol", {
-  set.seed(1)
   request <- local_POST_dataset_request(data.frame(biomarker = c("ab", "ba"),
                                                    value = 1,
                                                    day = 1:10,
                                                    age = "0-5",
                                                    sex = c("M", "F")),
-                                        "testdata")
+                                        "testdata",
+                                        cookie = cookie)
   router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
@@ -113,14 +111,13 @@ test_that("can get uploaded dataset metadata with default xcol", {
 })
 
 test_that("can get uploaded dataset metadata with xcol", {
-  set.seed(1)
   request <- local_POST_dataset_request(data.frame(biomarker = c("ab", "ba"),
                                                    value = 1,
                                                    time = 1:10,
                                                    age = "0-5",
                                                    sex = c("M", "F")),
                                         "testdata",
-                                        xcol = "time")
+                                        xcol = "time", cookie = cookie)
   router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
@@ -136,12 +133,12 @@ test_that("can get uploaded dataset metadata with xcol", {
 })
 
 test_that("can get uploaded dataset without covariates", {
-  set.seed(1)
   request <- local_POST_dataset_request(data.frame(biomarker = c("ab", "ba"),
                                                    value = 1,
                                                    time = 1:10),
                                         "testdata",
-                                        xcol = "time")
+                                        xcol = "time",
+                                        cookie = cookie)
   router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
@@ -158,9 +155,9 @@ test_that("can get uploaded dataset without covariates", {
 
 test_that("returns 400 if no xcol", {
   request <- local_POST_dataset_request_no_xcol(data.frame(biomarker = c("ab", "ba"),
-                                                   value = 1,
-                                                   time = 1:10),
-                                        "testdata")
+                                                           value = 1,
+                                                           time = 1:10),
+                                                "testdata")
   router <- build_routes()
   res <- router$call(request)
   expect_equal(res$status, 400)
