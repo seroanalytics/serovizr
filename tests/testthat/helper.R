@@ -48,6 +48,29 @@ local_POST_dataset_request <- function(dat, filename, xcol = "day",
            CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
 }
 
+local_POST_dataset_request_no_xcol <- function(dat, filename,
+                                       env = parent.frame()) {
+  EOL <- "\r\n"
+  boundary <- "------WebKitFormBoundaryvbfCGA1r00d8B0Vv"
+  request_body <- paste0(boundary, EOL,
+                         sprintf("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", filename),
+                         EOL,
+                         "Content-Type: text/csv", EOL, EOL,
+                         readr::format_csv(dat, eol = EOL), EOL,
+                         boundary, "--")
+  filepath <- file.path("uploads", filename)
+  withr::defer({
+    if (fs::file_exists(filepath)) {
+      fs::file_delete(filepath)
+    }
+  }, envir = env)
+
+  make_req("POST", "/dataset/",
+           body = request_body,
+           CONTENT_LENGTH = nchar(request_body),
+           CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
+}
+
 local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
   filename <- "baddata"
   EOL <- "\r\n"

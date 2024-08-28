@@ -10,12 +10,15 @@ target_post_dataset <- function(req, res) {
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- parsed$xcol
+  if (is.null(xcol)) {
+    res$status <- 400L
+    msg <- "Missing required field: xcol."
+    return(bad_request_response(msg))
+  }
   if (is.null(parsed$file$type) || parsed$file$type != "text/csv") {
     res$status <- 400L
     msg <- "Invalid file type; please upload file of type text/csv."
-    error <- list(error = "BAD_REQUEST",
-                  detail = msg)
-    return(list(status = "failure", errors = list(error), data = NULL))
+    return(bad_request_response(msg))
   }
   file_body <- utils::read.csv(parsed$file$datapath)
   filename <- parsed$file$name
@@ -29,18 +32,15 @@ target_post_dataset <- function(req, res) {
     res$status <- 400L
     msg <- paste(filename, "already exists.",
                  "Please choose a unique name for this dataset.")
-    error <- list(error = "BAD_REQUEST",
-                  detail = msg)
-    return(list(status = "failure", errors = list(error), data = NULL))
+    return(bad_request_response(msg))
   }
   required_cols <- c("value", "biomarker", xcol)
   missing_cols <- required_cols[!(required_cols %in% colnames(file_body))]
   if (length(missing_cols) > 0) {
     res$status <- 400L
-    error <- list(error = "BAD_REQUEST",
-                  detail = paste("Missing required columns:",
-                                 paste(missing_cols, collapse = ", ")))
-    return(list(status = "failure", errors = list(error), data = NULL))
+    msg <- paste("Missing required columns:",
+                                 paste(missing_cols, collapse = ", "))
+    return(bad_request_response(msg))
   }
 
   logger::log_info(paste("Saving dataset", filename, "to disk"))
@@ -168,4 +168,10 @@ apply_filter <- function(filter, dat, cols) {
                               code = "BAD_REQUEST", status_code = 400L)
   }
   dat[dat[filter_var] == filter_level,]
+}
+
+bad_request_response <- function(msg) {
+  error <- list(error = "BAD_REQUEST",
+                detail = msg)
+  return(list(status = "failure", errors = list(error), data = NULL))
 }

@@ -120,3 +120,34 @@ test_that("can get uploaded dataset metadata with xcol", {
   expect_equal(body$data$biomarkers, c("ab", "ba"))
   expect_equal(body$data$xcol, "time")
 })
+
+test_that("can get uploaded dataset without covariates", {
+  request <- local_POST_dataset_request(data.frame(biomarker = c("ab", "ba"),
+                                                   value = 1,
+                                                   time = 1:10),
+                                        "testdata",
+                                        xcol = "time")
+  router <- build_routes()
+  res <- router$call(request)
+  expect_equal(res$status, 200)
+
+  res <- router$request("GET", "/dataset/testdata/")
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(length(body$data$variables), 0)
+  expect_equal(body$data$biomarkers, c("ab", "ba"))
+  expect_equal(body$data$xcol, "time")
+})
+
+test_that("returns 400 if no xcol", {
+  request <- local_POST_dataset_request_no_xcol(data.frame(biomarker = c("ab", "ba"),
+                                                   value = 1,
+                                                   time = 1:10),
+                                        "testdata")
+  router <- build_routes()
+  res <- router$call(request)
+  expect_equal(res$status, 400)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$errors[1, "detail"],
+               "Missing required field: xcol.")
+})
