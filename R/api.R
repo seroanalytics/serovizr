@@ -191,5 +191,5 @@ get_or_create_session_id <- function(req) {
 }
 
 generate_session_id <- function() {
-  rawToChar(as.raw(sample(c(65:90, 97:122), 10, replace=T)))
+  rawToChar(as.raw(sample(c(65:90, 97:122), 10, replace = TRUE)))
 }
