@@ -97,11 +97,13 @@ test_that("can get uploaded dataset metadata with default xcol", {
                                                    age = "0-5",
                                                    sex = c("M", "F")),
                                         "testdata")
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
-  set.seed(1) #so that same id generated when processing request
-  res <- router$request("GET", "/dataset/testdata/")
+
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -119,11 +121,12 @@ test_that("can get uploaded dataset metadata with xcol", {
                                                    sex = c("M", "F")),
                                         "testdata",
                                         xcol = "time")
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
-  set.seed(1) #so that same id generated when processing request
-  res <- router$request("GET", "/dataset/testdata/")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -139,11 +142,13 @@ test_that("can get uploaded dataset without covariates", {
                                                    time = 1:10),
                                         "testdata",
                                         xcol = "time")
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
-  set.seed(1) #so that same id generated when processing request
-  res <- router$request("GET", "/dataset/testdata/")
+
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(length(body$data$variables), 0)

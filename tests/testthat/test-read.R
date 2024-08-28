@@ -1,6 +1,19 @@
+test_that("GET /dataset<name> returns 401 if no session cookie present", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/"))
+  expect_equal(res$status, 401)
+  validate_failure_schema(res$body)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$errors[1, "detail"],
+               "No session cookie present.")
+})
+
 test_that("GET /dataset<name> returns 404 if dataset not found", {
-  router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 404)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
@@ -9,8 +22,10 @@ test_that("GET /dataset<name> returns 404 if dataset not found", {
 })
 
 test_that("GET /trace/<biomarker> returns 404 if dataset not found", {
-  router <- build_routes()
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 404)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
@@ -24,16 +39,16 @@ test_that("can get trace for uploaded dataset with xcol", {
                     time = 1:10,
                     age = "0-5",
                     sex = c("M", "F"))
-  set.seed(1)
-  request <- local_POST_dataset_request(dat,
-                                        "testdata",
-                                        xcol = "time")
-  router <- build_routes()
-  res <- router$call(request)
-  expect_equal(res$status, 200)
+  router <- build_routes(cookie_key)
+  post_request <- local_POST_dataset_request(dat,
+                                             "testdataset",
+                                             xcol = "time",
+                                             cookie = cookie)
+  expect_equal(router$call(post_request)$status, 200)
 
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdata/trace/ab/")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
                             "pseudoinverse used at 0.96",
@@ -62,12 +77,12 @@ test_that("can get disgagregated traces", {
                     day = 1:10,
                     age = "0-5",
                     sex = c("M", "F"))
-  local_add_dataset(dat,
-                    "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
-                        query = list(disaggregate = "sex"))
+  local_add_dataset(dat, name = "testdataset")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "disaggregate=sex",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   data <- body$data
@@ -90,12 +105,12 @@ test_that("can get filtered trace", {
                     day = 1:20,
                     age = rep(c("0-5", "0-5", "5+", "5+"), 5),
                     sex = c("M", "F"))
-  local_add_dataset(dat,
-                    "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
-                        query = list(filter = "sex:M"))
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "filter=sex%3AM",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   data <- body$data
@@ -111,12 +126,12 @@ test_that("can get trace filtered by multiple variables", {
                     day = 1:20,
                     age = rep(c("0-5", "0-5", "5+", "5+"), 5),
                     sex = c("M", "F"))
-  local_add_dataset(dat,
-                    "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
-                        query = list(filter = "sex%3AM%2Bage%3A0-5"))
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "filter=sex%3AM%2Bage%3A0-5",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   data <- body$data
@@ -132,12 +147,12 @@ test_that("can get disaggregated and filtered traces", {
                     day = 1:20,
                     age = rep(c("0-5", "0-5", "5+", "5+"), 5),
                     sex = c("M", "F"))
-  local_add_dataset(dat,
-                    "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/",
-                        query = list(disaggregate = "age", filter = "sex:M"))
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "disaggregate=age&filter=sex:M",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   data <- body$data

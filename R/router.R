@@ -1,4 +1,4 @@
-build_routes <- function() {
+build_routes <- function(cookie_key = plumber::random_cookie_key()) {
   if (!dir.exists("uploads")) {
     dir.create("uploads")
   }
@@ -14,7 +14,8 @@ build_routes <- function() {
     value
   })
 
-  pr$registerHooks(plumber::session_cookie(plumber::random_cookie_key(),
+  pr$registerHooks(plumber::session_cookie(cookie_key,
+                                           name = "serovizr",
                                            path = "/"))
 
   pr$handle(get_root())

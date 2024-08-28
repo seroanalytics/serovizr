@@ -1,116 +1,73 @@
-test_that("GET /", {
-  res <- target_get_root()
-  expect_equal(res, jsonlite::unbox("Welcome to serovizr"))
-
-  endpoint <- get_root()
-  res_endpoint <- endpoint$run()
-  expect_equal(res_endpoint$status_code, 200)
-  expect_equal(res_endpoint$content_type, "application/json")
-  expect_equal(res_endpoint$data, res)
-
-  router <- build_routes()
-  res_api <- router$request("GET", "/")
-  expect_equal(res_api$status, 200)
-  expect_equal(res_api$body, res_endpoint$body)
-})
-
-test_that("GET /version", {
-  res <- target_get_version()
-  expect_equal(res, jsonlite::unbox(as.character(packageVersion("serovizr"))))
-
-  router <- build_routes()
-  res_api <- router$request("GET", "/version/")
-  expect_equal(res_api$status, 200)
-  body <- jsonlite::fromJSON(res_api$body)
-  expect_equal(unclass(res), unclass(body$data))
-})
-
-test_that("POST /dataset", {
-  router <- build_routes()
+test_that("new session id is set if not present on POST /dataset", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  set.seed(1)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
-                                                   value = 1,
-                                                   day = 1:10),
-                                        "testdataset")
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time")
   res <- router$call(request)
   expect_equal(res$status, 200)
-  body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$data, "testdataset")
-  porcelain:::porcelain_validator("ResponseSuccess",
-                                  root = schema_root,
-                                  query = NULL)(res$body)
-  porcelain:::porcelain_validator("UploadResult",
-                                  root = schema_root,
-                                  query = NULL)(
-    jsonlite::toJSON(body$data, auto_unbox = TRUE)
-  )
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_equal(session$id, session_id)
+  expect_true(fs::file_exists(file.path("uploads", session_id, "testdataset")))
 })
 
-test_that("GET /datasets", {
-  local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
-                    "testdataset")
-  local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
-                    "anotherdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/datasets/")
+test_that("existing session id is used if present on POST /dataset", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+
+  session <- list(id = "1234")
+
+  cookie <- plumber:::cookieToStr("serovizr",
+                                  plumber:::encodeCookie(session,
+                                                         plumber:::asCookieKey(key)))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time",
+                                        session = "1234",
+                                        cookie = cookie)
+  res <- router$call(request)
   expect_equal(res$status, 200)
-  body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$data, c("anotherdataset", "testdataset"))
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_equal(session$id, "1234")
+  expect_true(fs::file_exists("uploads/1234/testdataset"))
 })
 
-test_that("GET /dataset<name>", {
-  local_add_dataset(data.frame(biomarker = c("ab", "ba"),
-                               value = 1,
-                               day = 1:10,
-                               age = "0-5",
-                               sex = c("M", "F")),
-                    "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/")
+test_that("existing session id is used if present on GET /dataset", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  session <- list(id = "1234")
+  cookie <- plumber:::cookieToStr("serovizr",
+                                  plumber:::encodeCookie(session,
+                                                         plumber:::asCookieKey(key)))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time",
+                                        session = "1234",
+                                        cookie = cookie)
+  res <- router$call(request)
   expect_equal(res$status, 200)
-  body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$data$variables$name, c("age", "sex"))
-  expect_equal(body$data$variables$levels, list(c("0-5"), c("M", "F")))
-  expect_equal(body$data$biomarkers, c("ab", "ba"))
-  expect_equal(body$data$xcol, "day")
-})
 
-test_that("GET /dataset/<name>/trace/<biomarker>", {
-  dat <- data.frame(biomarker = c("ab", "ba"),
-                    value = c(1, 1.5, 2, 3, 3.2, 4, 5, 6, 6.1, 7),
-                    day = 1:10,
-                    age = "0-5",
-                    sex = c("M", "F"))
-  local_add_dataset(dat,
-                    "testdataset")
-  suppressWarnings({
-    m <- stats::loess(value ~ day, data = dat[dat["biomarker"] == "ab",], span = 0.75)
-    model <- list(x = 1:9, y = stats::predict(m, tibble::data_frame(day = 1:9)))
-  })
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/")
+  get_request_without_cookie <- make_req("GET",
+                          "/dataset/testdataset/trace/ab/")
+
+  res <- router$call(get_request_without_cookie)
+  expect_equal(res$status, 401)
+
+  get_request_with_cookie <- make_req("GET",
+                          "/dataset/testdataset/trace/ab/",
+                          HTTP_COOKIE = cookie)
+
+  res <- router$call(get_request_with_cookie)
   expect_equal(res$status, 200)
-  expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
-                            "pseudoinverse used at 0.96",
-                            "neighborhood radius 4.04",
-                            "reciprocal condition number  0",
-                            "There are other near singularities as well. 16.322")
-  expected <- jsonlite::toJSON(list(list(name = jsonlite::unbox("all"),
-                                         model = model,
-                                         raw = list(
-                                           x = c(1, 3, 5, 7, 9),
-                                           y = c(1, 2, 3.2, 5, 6.1)),
-                                         warnings = lapply(expected_warnings,
-                                                           jsonlite::unbox))
-  ))
-  body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$data, jsonlite::fromJSON(expected))
-})
-
-test_that("requests without trailing slash are redirected", {
-  router <- build_routes()
-  res_api <- router$request("GET", "/version")
-  expect_equal(res_api$status, 307)
 })

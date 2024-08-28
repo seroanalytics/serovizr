@@ -50,9 +50,10 @@ test_that("GET /datasets", {
                     "testdataset")
   local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
                     "anotherdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/datasets/")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/datasets/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data, c("anotherdataset", "testdataset"))
@@ -65,9 +66,10 @@ test_that("GET /dataset<name>", {
                                age = "0-5",
                                sex = c("M", "F")),
                     "testdataset")
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -88,9 +90,10 @@ test_that("GET /dataset/<name>/trace/<biomarker>", {
     m <- stats::loess(value ~ day, data = dat[dat["biomarker"] == "ab",], span = 0.75)
     model <- list(x = 1:9, y = stats::predict(m, tibble::data_frame(day = 1:9)))
   })
-  router <- build_routes()
-  set.seed(1)
-  res <- router$request("GET", "/dataset/testdataset/trace/ab/")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
                             "pseudoinverse used at 0.96",
