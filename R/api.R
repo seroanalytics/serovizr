@@ -105,7 +105,7 @@ target_get_trace <- function(name,
      dat <- apply_filter(f, dat, cols)
    }
   }
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -173,7 +173,7 @@ apply_filter <- function(filter, dat, cols) {
                                     "not found in data"),
                               code = "BAD_REQUEST", status_code = 400L)
   }
-  dat[dat[filter_var] == filter_level,]
+  dat[dat[filter_var] == filter_level, ]
 }
 
 bad_request_response <- function(msg) {
@@ -191,5 +191,5 @@ get_or_create_session_id <- function(req) {
 }
 
 generate_session_id <- function() {
-  rawToChar(as.raw(sample(c(65:90,97:122), 10, replace=T)))
+  rawToChar(as.raw(sample(c(65:90, 97:122), 10, replace=T)))
 }
