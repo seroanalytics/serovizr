@@ -24,12 +24,15 @@ test_that("can get trace for uploaded dataset with xcol", {
                     time = 1:10,
                     age = "0-5",
                     sex = c("M", "F"))
+  set.seed(1)
   request <- local_POST_dataset_request(dat,
                                         "testdata",
                                         xcol = "time")
   router <- build_routes()
   res <- router$call(request)
   expect_equal(res$status, 200)
+
+  set.seed(1)
   res <- router$request("GET", "/dataset/testdata/trace/ab/")
   expect_equal(res$status, 200)
   expected_warnings <- list("span too small.   fewer data values than degrees of freedom.",
@@ -62,6 +65,7 @@ test_that("can get disgagregated traces", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
+  set.seed(1)
   res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(disaggregate = "sex"))
   expect_equal(res$status, 200)
@@ -89,6 +93,7 @@ test_that("can get filtered trace", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
+  set.seed(1)
   res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(filter = "sex:M"))
   expect_equal(res$status, 200)
@@ -109,6 +114,7 @@ test_that("can get trace filtered by multiple variables", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
+  set.seed(1)
   res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(filter = "sex%3AM%2Bage%3A0-5"))
   expect_equal(res$status, 200)
@@ -129,6 +135,7 @@ test_that("can get disaggregated and filtered traces", {
   local_add_dataset(dat,
                     "testdataset")
   router <- build_routes()
+  set.seed(1)
   res <- router$request("GET", "/dataset/testdataset/trace/ab/",
                         query = list(disaggregate = "age", filter = "sex:M"))
   expect_equal(res$status, 200)

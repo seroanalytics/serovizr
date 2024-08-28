@@ -27,8 +27,12 @@ target_post_dataset <- function(req, res) {
     filename <- stringr::str_remove_all(filename,
                                         paste0(".", file_ext))
   }
-  path <- file.path("uploads", filename)
-  if (file.exists(path)) {
+  if (is.null(req$session$id)) {
+    req$session$id <- rawToChar(as.raw(sample(c(65:90,97:122), 10, replace=T)))
+  }
+  session_id <- as.character(req$session$id)
+  path <- file.path("uploads", session_id, filename)
+  if (dir.exists(path)) {
     res$status <- 400L
     msg <- paste(filename, "already exists.",
                  "Please choose a unique name for this dataset.")
@@ -44,15 +48,15 @@ target_post_dataset <- function(req, res) {
   }
 
   logger::log_info(paste("Saving dataset", filename, "to disk"))
-  dir.create(path)
+  dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
   porcelain:::response_success(jsonlite::unbox(filename))
 }
 
-target_get_dataset <- function(name) {
+target_get_dataset <- function(name, req) {
   logger::log_info(paste("Requesting metadata for dataset:", name))
-  dataset <- read_dataset(name)
+  dataset <- read_dataset(req, name)
   logger::log_info(paste("Found dataset:", name))
   dat <- dataset$data
   xcol <- dataset$xcol
@@ -78,17 +82,19 @@ target_get_dataset <- function(name) {
        xcol = jsonlite::unbox(xcol))
 }
 
-target_get_datasets <- function() {
-  list.files("uploads")
+target_get_datasets <- function(req) {
+  session_id <- get_or_create_session(req)
+  list.files(file.path("uploads", session_id))
 }
 
 target_get_trace <- function(name,
                              biomarker,
+                             req,
                              filter = NULL,
                              disaggregate = NULL) {
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  dataset <- read_dataset(name)
+  dataset <- read_dataset(req, name)
   dat <- dataset$data
   xcol <- dataset$xcol
   cols <- colnames(dat)
@@ -123,8 +129,9 @@ target_get_trace <- function(name,
   }
 }
 
-read_dataset <- function(name) {
-  path <- file.path("uploads", name)
+read_dataset <- function(req, name) {
+  session_id <- get_or_create_session(req)
+  path <- file.path("uploads", session_id, name)
   if (!file.exists(path)) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
                               code = "DATASET_NOT_FOUND", status_code = 404L)
@@ -174,4 +181,16 @@ bad_request_response <- function(msg) {
   error <- list(error = "BAD_REQUEST",
                 detail = msg)
   return(list(status = "failure", errors = list(error), data = NULL))
+}
+
+get_or_create_session <- function(req) {
+  if (is.null(req$session$id)) {
+    logger::log_info("Creating new session id")
+    req$session$id <- generate_session_id()
+  }
+  as.character(req$session$id)
+}
+
+generate_session_id <- function() {
+  rawToChar(as.raw(sample(c(65:90,97:122), 10, replace=T)))
 }

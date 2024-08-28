@@ -20,7 +20,7 @@ Imports:
     stringr,
     tibble
 Remotes:
-    reside-ic/porcelain,
+    hillalex/porcelain@i39,
 Suggests:
     fs,
     lintr (>= 3.1.2),

@@ -9,9 +9,13 @@ build_routes <- function() {
       req$HTTP_ORIGIN %in% c("http://localhost:3000", "http://localhost")) {
       # allow local app and integration tests to access endpoints
       res$setHeader("Access-Control-Allow-Origin", req$HTTP_ORIGIN)
+      res$setHeader("Access-Control-Allow-Credentials", "true")
     }
     value
   })
+
+  pr$registerHooks(plumber::session_cookie(plumber::random_cookie_key(),
+                                           path = "/"))
 
   pr$handle(get_root())
   pr$handle(get_version())
@@ -22,7 +26,6 @@ build_routes <- function() {
   pr$handle(get_datasets())
   pr$handle(get_trace())
 }
-
 
 get_root <- function() {
   porcelain::porcelain_endpoint$new(
