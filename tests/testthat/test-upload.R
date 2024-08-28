@@ -1,28 +1,28 @@
 test_that("uploading data with wrong columns returns 400", {
-  router <- build_routes()
-  set.seed(1)
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    day = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$errors[1, "detail"], "Missing required columns: value")
 
-  set.seed(1)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    value = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$errors[1, "detail"], "Missing required columns: day")
 
-  set.seed(1)
   request <- local_POST_dataset_request(data.frame(day = 1:10,
                                                    value = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   body <- jsonlite::fromJSON(res$body)
@@ -30,16 +30,15 @@ test_that("uploading data with wrong columns returns 400", {
 })
 
 test_that("uploading dataset with duplicate name returns 400", {
-  router <- build_routes()
-  set.seed(1)
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    day = 1:10,
                                                    value = 1),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
 
-  set.seed(1) #so that same session id gets created
   res <- router$call(request)
   body <- jsonlite::fromJSON(res$body)
   validate_failure_schema(res$body)
@@ -48,13 +47,13 @@ test_that("uploading dataset with duplicate name returns 400", {
 })
 
 test_that("can upload dataset with different xcol", {
-  router <- build_routes()
-  set.seed(1)
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    time = 1:10,
                                                    value = 1),
                                         "testdataset",
-                                        xcol = "time")
+                                        xcol = "time",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
 })
