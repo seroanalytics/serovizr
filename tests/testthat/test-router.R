@@ -1,9 +1,10 @@
 test_that("GET /", {
-  res <- target_get_root()
+  mock_req <- as.environment(list(id = 1234))
+  res <- target_get_root(mock_req)
   expect_equal(res, jsonlite::unbox("Welcome to serovizr"))
 
   endpoint <- get_root()
-  res_endpoint <- endpoint$run()
+  res_endpoint <- endpoint$run(mock_req)
   expect_equal(res_endpoint$status_code, 200)
   expect_equal(res_endpoint$content_type, "application/json")
   expect_equal(res_endpoint$data, res)
@@ -15,7 +16,7 @@ test_that("GET /", {
 })
 
 test_that("GET /version", {
-  res <- target_get_version()
+  res <- target_get_version(as.environment(list(id = 1234)))
   expect_equal(res, jsonlite::unbox(as.character(packageVersion("serovizr"))))
 
   router <- build_routes()

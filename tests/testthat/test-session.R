@@ -21,7 +21,6 @@ test_that("existing session id is used if present on POST /dataset", {
   router <- build_routes(key)
 
   session <- list(id = "1234")
-
   cookie <- plumber:::cookieToStr("serovizr",
                                   plumber:::encodeCookie(session,
                                                          plumber:::asCookieKey(key)))
@@ -41,7 +40,59 @@ test_that("existing session id is used if present on POST /dataset", {
   expect_true(fs::file_exists("uploads/1234/testdataset"))
 })
 
-test_that("existing session id is used if present on GET /dataset", {
+test_that("new session id is set if not present on GET /dataset", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  get_request_without_cookie <- make_req("GET",
+                                         "/dataset/testdataset/")
+  res <- router$call(get_request_without_cookie)
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_true(is.character(session$id))
+  expect_equal(nchar(session$id), 10)
+})
+
+test_that("new session id is set if not present on GET /", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  get_request_without_cookie <- make_req("GET",
+                                         "/")
+  res <- router$call(get_request_without_cookie)
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_true(is.character(session$id))
+  expect_equal(nchar(session$id), 10)
+})
+
+test_that("new session id is set if not present on GET /version/", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  get_request_without_cookie <- make_req("GET",
+                                         "/version/")
+  res <- router$call(get_request_without_cookie)
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_true(is.character(session$id))
+  expect_equal(nchar(session$id), 10)
+})
+
+test_that("new session id is set if not present on GET /dataset/trace/", {
+  key <- plumber::random_cookie_key()
+  router <- build_routes(key)
+  set.seed(1)
+  get_request_without_cookie <- make_req("GET",
+                                         "/dataset/testdataset/trace/ab/")
+  res <- router$call(get_request_without_cookie)
+  cookie <- res$headers[["Set-Cookie"]]
+  session <- plumber:::decodeCookie(plumber:::parseCookies(cookie)[[1]],
+                                    plumber:::asCookieKey(key))
+  expect_equal(session$id, session_id)
+})
+
+test_that("existing session id is used if present on GET /dataset/trace/", {
   key <- plumber::random_cookie_key()
   router <- build_routes(key)
   session <- list(id = "1234")
@@ -62,7 +113,7 @@ test_that("existing session id is used if present on GET /dataset", {
                           "/dataset/testdataset/trace/ab/")
 
   res <- router$call(get_request_without_cookie)
-  expect_equal(res$status, 401)
+  expect_equal(res$status, 404)
 
   get_request_with_cookie <- make_req("GET",
                           "/dataset/testdataset/trace/ab/",

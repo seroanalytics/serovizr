@@ -1,12 +1,15 @@
-target_get_root <- function() {
+target_get_root <- function(req) {
+  get_or_create_session_id(req)
   jsonlite::unbox("Welcome to serovizr")
 }
 
-target_get_version <- function() {
+target_get_version <- function(req) {
+  get_or_create_session_id(req)
   jsonlite::unbox(as.character(utils::packageVersion("serovizr")))
 }
 
 target_post_dataset <- function(req, res) {
+  session_id <- get_or_create_session_id(req)
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- parsed$xcol
@@ -27,7 +30,6 @@ target_post_dataset <- function(req, res) {
     filename <- stringr::str_remove_all(filename,
                                         paste0(".", file_ext))
   }
-  session_id <- get_or_create_session_id(req)
   path <- file.path("uploads", session_id, filename)
   if (dir.exists(path)) {
     res$status <- 400L
@@ -80,7 +82,7 @@ target_get_dataset <- function(name, req) {
 }
 
 target_get_datasets <- function(req) {
-  session_id <- get_session_id(req)
+  session_id <- get_or_create_session_id(req)
   list.files(file.path("uploads", session_id))
 }
 
@@ -127,7 +129,7 @@ target_get_trace <- function(name,
 }
 
 read_dataset <- function(req, name) {
-  session_id <- get_session_id(req)
+  session_id <- get_or_create_session_id(req)
   path <- file.path("uploads", session_id, name)
   if (!file.exists(path)) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
@@ -184,14 +186,6 @@ get_or_create_session_id <- function(req) {
   if (is.null(req$session$id)) {
     logger::log_info("Creating new session id")
     req$session$id <- generate_session_id()
-  }
-  as.character(req$session$id)
-}
-
-get_session_id <- function(req) {
-  if (is.null(req$session$id)) {
-    porcelain::porcelain_stop("No session cookie present.",
-                              code = "NO_SESSION", status_code = 401L)
   }
   as.character(req$session$id)
 }
