@@ -11,17 +11,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY docker/bin /usr/local/bin/
 
 RUN install_packages --repo=https://mrc-ide.r-universe.dev \
+        base64enc \
+        cachem \
         callr \
         docopt \
         logger \
         jsonlite \
         jsonvalidate \
         plumber \
-        porcelain \
         remotes \
         Rook \
         stringr \
         tibble
+
+RUN Rscript -e "install.packages('remotes')"
+RUN Rscript -e 'remotes::install_github("hillalex/porcelain@i39")'
 
 WORKDIR /serovizr
 
