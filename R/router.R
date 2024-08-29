@@ -1,4 +1,5 @@
-build_routes <- function(cookie_key = plumber::random_cookie_key()) {
+build_routes <- function(cookie_key = plumber::random_cookie_key(),
+                         cache = cachem::cache_mem(max_age = 60)) {
   if (!dir.exists("uploads")) {
     dir.create("uploads")
   }
@@ -11,12 +12,19 @@ build_routes <- function(cookie_key = plumber::random_cookie_key()) {
       res$setHeader("Access-Control-Allow-Origin", req$HTTP_ORIGIN)
       res$setHeader("Access-Control-Allow-Credentials", "true")
     }
+
+    if (!is.null(req$session$id)) {
+      id <- as.character(req$session$id)
+      cache$set(id, TRUE)
+    }
+    prune_inactive_sessions(cache)
     value
   })
 
   pr$registerHooks(plumber::session_cookie(cookie_key,
                                            name = "serovizr",
-                                           path = "/"))
+                                           path = "/",
+                                           expiration = 60))
 
   pr$handle(get_root())
   pr$handle(get_version())
@@ -67,4 +75,14 @@ get_trace <- function() {
     porcelain::porcelain_input_query(disaggregate = "string",
                                      filter = "string"),
     returning = porcelain::porcelain_returning_json("DataSeries"))
+}
+
+prune_inactive_sessions <- function(cache) {
+  active_sessions <- cache$keys()
+  subdirectories <- list.files("uploads")
+  old_sessions <- setdiff(subdirectories, active_sessions)
+  if (length(old_sessions) > 0) {
+    logger::log_info("Cleaning up expired sessions")
+    lapply(old_sessions, function(x) fs::dir_delete(file.path("uploads", x)))
+  }
 }

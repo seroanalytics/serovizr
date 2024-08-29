@@ -42,7 +42,7 @@ target_post_dataset <- function(req, res) {
   if (length(missing_cols) > 0) {
     res$status <- 400L
     msg <- paste("Missing required columns:",
-                                 paste(missing_cols, collapse = ", "))
+                 paste(missing_cols, collapse = ", "))
     return(bad_request_response(msg))
   }
 
@@ -101,9 +101,9 @@ target_get_trace <- function(name,
     filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
     logger::log_info(paste("Filtering by variables:", paste(filters,
                                                             collapse = ", ")))
-   for (f in filters) {
-     dat <- apply_filter(f, dat, cols)
-   }
+    for (f in filters) {
+      dat <- apply_filter(f, dat, cols)
+    }
   }
   dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
@@ -191,5 +191,10 @@ get_or_create_session_id <- function(req) {
 }
 
 generate_session_id <- function() {
-  rawToChar(as.raw(sample(c(65:90, 97:122), 10, replace = TRUE)))
+  tolower(rawToChar(sample(c(as.raw(sample(c(65:90, 97:122),
+                                           5,
+                                           replace = TRUE)),
+                             as.raw(sample(48:57,
+                                           5,
+                                           replace = TRUE))))))
 }
