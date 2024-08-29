@@ -1,12 +1,15 @@
-target_get_root <- function() {
+target_get_root <- function(req) {
+  get_or_create_session_id(req)
   jsonlite::unbox("Welcome to serovizr")
 }
 
-target_get_version <- function() {
+target_get_version <- function(req) {
+  get_or_create_session_id(req)
   jsonlite::unbox(as.character(utils::packageVersion("serovizr")))
 }
 
 target_post_dataset <- function(req, res) {
+  session_id <- get_or_create_session_id(req)
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- parsed$xcol
@@ -27,8 +30,8 @@ target_post_dataset <- function(req, res) {
     filename <- stringr::str_remove_all(filename,
                                         paste0(".", file_ext))
   }
-  path <- file.path("uploads", filename)
-  if (file.exists(path)) {
+  path <- file.path("uploads", session_id, filename)
+  if (dir.exists(path)) {
     res$status <- 400L
     msg <- paste(filename, "already exists.",
                  "Please choose a unique name for this dataset.")
@@ -39,20 +42,20 @@ target_post_dataset <- function(req, res) {
   if (length(missing_cols) > 0) {
     res$status <- 400L
     msg <- paste("Missing required columns:",
-                                 paste(missing_cols, collapse = ", "))
+                 paste(missing_cols, collapse = ", "))
     return(bad_request_response(msg))
   }
 
   logger::log_info(paste("Saving dataset", filename, "to disk"))
-  dir.create(path)
+  dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
   porcelain:::response_success(jsonlite::unbox(filename))
 }
 
-target_get_dataset <- function(name) {
+target_get_dataset <- function(name, req) {
   logger::log_info(paste("Requesting metadata for dataset:", name))
-  dataset <- read_dataset(name)
+  dataset <- read_dataset(req, name)
   logger::log_info(paste("Found dataset:", name))
   dat <- dataset$data
   xcol <- dataset$xcol
@@ -78,17 +81,19 @@ target_get_dataset <- function(name) {
        xcol = jsonlite::unbox(xcol))
 }
 
-target_get_datasets <- function() {
-  list.files("uploads")
+target_get_datasets <- function(req) {
+  session_id <- get_or_create_session_id(req)
+  list.files(file.path("uploads", session_id))
 }
 
 target_get_trace <- function(name,
                              biomarker,
+                             req,
                              filter = NULL,
                              disaggregate = NULL) {
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  dataset <- read_dataset(name)
+  dataset <- read_dataset(req, name)
   dat <- dataset$data
   xcol <- dataset$xcol
   cols <- colnames(dat)
@@ -96,11 +101,11 @@ target_get_trace <- function(name,
     filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
     logger::log_info(paste("Filtering by variables:", paste(filters,
                                                             collapse = ", ")))
-   for (f in filters) {
-     dat <- apply_filter(f, dat, cols)
-   }
+    for (f in filters) {
+      dat <- apply_filter(f, dat, cols)
+    }
   }
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -123,8 +128,9 @@ target_get_trace <- function(name,
   }
 }
 
-read_dataset <- function(name) {
-  path <- file.path("uploads", name)
+read_dataset <- function(req, name) {
+  session_id <- get_or_create_session_id(req)
+  path <- file.path("uploads", session_id, name)
   if (!file.exists(path)) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
                               code = "DATASET_NOT_FOUND", status_code = 404L)
@@ -167,11 +173,28 @@ apply_filter <- function(filter, dat, cols) {
                                     "not found in data"),
                               code = "BAD_REQUEST", status_code = 400L)
   }
-  dat[dat[filter_var] == filter_level,]
+  dat[dat[filter_var] == filter_level, ]
 }
 
 bad_request_response <- function(msg) {
   error <- list(error = "BAD_REQUEST",
                 detail = msg)
   return(list(status = "failure", errors = list(error), data = NULL))
+}
+
+get_or_create_session_id <- function(req) {
+  if (is.null(req$session$id)) {
+    logger::log_info("Creating new session id")
+    req$session$id <- generate_session_id()
+  }
+  as.character(req$session$id)
+}
+
+generate_session_id <- function() {
+  tolower(rawToChar(sample(c(as.raw(sample(c(65:90, 97:122),
+                                           5,
+                                           replace = TRUE)),
+                             as.raw(sample(48:57,
+                                           5,
+                                           replace = TRUE))))))
 }

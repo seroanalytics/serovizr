@@ -1,9 +1,13 @@
-make_req <- function(verb = "GET", path = "/", qs = "", body = "", pr = NULL, ...) {
+make_req <- function(verb = "GET",
+                     path = "/",
+                     qs = "",
+                     body = "",
+                     pr = NULL,
+                     ...) {
   req <- as.environment(list(...))
   req$REQUEST_METHOD <- toupper(verb)
   req$PATH_INFO <- path
   req$QUERY_STRING <- qs
-
   if (is.character(body)) {
     body <- charToRaw(body)
   }
@@ -13,9 +17,9 @@ make_req <- function(verb = "GET", path = "/", qs = "", body = "", pr = NULL, ..
   req
 }
 
-local_add_dataset <- function(dat, name, env = parent.frame()) {
-  filepath <- file.path("uploads", name)
-  dir.create(filepath)
+local_add_dataset <- function(dat, name, session = session_id, env = parent.frame()) {
+  filepath <- file.path("uploads", session, name)
+  dir.create(filepath, recursive = TRUE)
   write.csv(dat, file.path(filepath, "data"), row.names = FALSE)
   write("day", file.path(filepath, "xcol"))
   withr::defer(fs::dir_delete(filepath), envir = env)
@@ -23,7 +27,9 @@ local_add_dataset <- function(dat, name, env = parent.frame()) {
 }
 
 local_POST_dataset_request <- function(dat, filename, xcol = "day",
-                                       env = parent.frame()) {
+                                       env = parent.frame(),
+                                       session = session_id,
+                                       cookie = "") {
   EOL <- "\r\n"
   boundary <- "------WebKitFormBoundaryvbfCGA1r00d8B0Vv"
   request_body <- paste0(boundary, EOL,
@@ -35,7 +41,7 @@ local_POST_dataset_request <- function(dat, filename, xcol = "day",
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
                          xcol, EOL,
                          boundary, "--")
-  filepath <- file.path("uploads", filename)
+  filepath <- file.path("uploads", session, filename)
   withr::defer({
     if (fs::file_exists(filepath)) {
       fs::file_delete(filepath)
@@ -44,12 +50,13 @@ local_POST_dataset_request <- function(dat, filename, xcol = "day",
 
   make_req("POST", "/dataset/",
            body = request_body,
+           HTTP_COOKIE = cookie,
            CONTENT_LENGTH = nchar(request_body),
            CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
 }
 
 local_POST_dataset_request_no_xcol <- function(dat, filename,
-                                       env = parent.frame()) {
+                                               env = parent.frame()) {
   EOL <- "\r\n"
   boundary <- "------WebKitFormBoundaryvbfCGA1r00d8B0Vv"
   request_body <- paste0(boundary, EOL,
@@ -58,7 +65,7 @@ local_POST_dataset_request_no_xcol <- function(dat, filename,
                          "Content-Type: text/csv", EOL, EOL,
                          readr::format_csv(dat, eol = EOL), EOL,
                          boundary, "--")
-  filepath <- file.path("uploads", filename)
+  filepath <- file.path("uploads", session_id, filename)
   withr::defer({
     if (fs::file_exists(filepath)) {
       fs::file_delete(filepath)
@@ -84,7 +91,7 @@ local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
                          "day", EOL,
                          boundary, "--")
-  filepath <- file.path("uploads", filename)
+  filepath <- file.path("uploads", session_id, filename)
   withr::defer({
     if (fs::file_exists(filepath)) {
       fs::file_delete(filepath)

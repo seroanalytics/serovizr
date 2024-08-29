@@ -9,7 +9,9 @@ License: GPL (>= 3)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.1
-Imports: 
+Imports:
+    base64enc,
+    cachem,
     docopt,
     jsonlite,
     logger,
@@ -20,7 +22,7 @@ Imports:
     stringr,
     tibble
 Remotes:
-    reside-ic/porcelain,
+    hillalex/porcelain@i39,
 Suggests:
     fs,
     lintr (>= 3.1.2),

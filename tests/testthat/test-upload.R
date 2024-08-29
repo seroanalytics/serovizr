@@ -1,8 +1,9 @@
 test_that("uploading data with wrong columns returns 400", {
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    day = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   validate_failure_schema(res$body)
@@ -11,7 +12,8 @@ test_that("uploading data with wrong columns returns 400", {
 
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    value = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   body <- jsonlite::fromJSON(res$body)
@@ -19,7 +21,8 @@ test_that("uploading data with wrong columns returns 400", {
 
   request <- local_POST_dataset_request(data.frame(day = 1:10,
                                                    value = 1:10),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 400)
   body <- jsonlite::fromJSON(res$body)
@@ -27,11 +30,12 @@ test_that("uploading data with wrong columns returns 400", {
 })
 
 test_that("uploading dataset with duplicate name returns 400", {
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    day = 1:10,
                                                    value = 1),
-                                        "testdataset")
+                                        "testdataset",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
 
@@ -43,12 +47,13 @@ test_that("uploading dataset with duplicate name returns 400", {
 })
 
 test_that("can upload dataset with different xcol", {
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    time = 1:10,
                                                    value = 1),
                                         "testdataset",
-                                        xcol = "time")
+                                        xcol = "time",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
 })
@@ -65,18 +70,19 @@ test_that("uploading wrong file type returns 400", {
 })
 
 test_that("saves file and xcol", {
-  router <- build_routes()
+  router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    time = 1:10,
                                                    value = 1),
                                         filename = "testdataset",
-                                        xcol = "time")
+                                        xcol = "time",
+                                        cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
-  dat <- utils::read.csv(file.path("uploads/testdataset/data"))
+  dat <- utils::read.csv(file.path("uploads", session_id, "/testdataset/data"))
   expect_equal(colnames(dat), c("biomarker", "time", "value"))
   expect_equal(nrow(dat), 10)
-  xcol <- readLines("uploads/testdataset/xcol")
+  xcol <- readLines(file.path("uploads", session_id, "/testdataset/xcol"))
   expect_equal(xcol, "time")
 })
 
@@ -86,12 +92,15 @@ test_that("can get uploaded dataset metadata with default xcol", {
                                                    day = 1:10,
                                                    age = "0-5",
                                                    sex = c("M", "F")),
-                                        "testdata")
-  router <- build_routes()
+                                        "testdata",
+                                        cookie = cookie)
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
 
-  res <- router$request("GET", "/dataset/testdata/")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -107,12 +116,13 @@ test_that("can get uploaded dataset metadata with xcol", {
                                                    age = "0-5",
                                                    sex = c("M", "F")),
                                         "testdata",
-                                        xcol = "time")
-  router <- build_routes()
+                                        xcol = "time", cookie = cookie)
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
-
-  res <- router$request("GET", "/dataset/testdata/")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data$variables$name, c("age", "sex"))
@@ -126,12 +136,15 @@ test_that("can get uploaded dataset without covariates", {
                                                    value = 1,
                                                    time = 1:10),
                                         "testdata",
-                                        xcol = "time")
-  router <- build_routes()
+                                        xcol = "time",
+                                        cookie = cookie)
+  router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
 
-  res <- router$request("GET", "/dataset/testdata/")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdata/",
+                              HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
   expect_equal(length(body$data$variables), 0)
@@ -141,9 +154,9 @@ test_that("can get uploaded dataset without covariates", {
 
 test_that("returns 400 if no xcol", {
   request <- local_POST_dataset_request_no_xcol(data.frame(biomarker = c("ab", "ba"),
-                                                   value = 1,
-                                                   time = 1:10),
-                                        "testdata")
+                                                           value = 1,
+                                                           time = 1:10),
+                                                "testdata")
   router <- build_routes()
   res <- router$call(request)
   expect_equal(res$status, 400)
