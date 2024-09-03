@@ -10,6 +10,7 @@ Options:
 
 
 main <- function(args = commandArgs(TRUE)) {
+  options(error = rlang::entrace)
   opts <- main_args(args)
   port <- opts$port
   logger::log_info("Starting API")

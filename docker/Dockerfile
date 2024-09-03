@@ -15,6 +15,7 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         cachem \
         callr \
         docopt \
+        fs \
         logger \
         jsonlite \
         jsonvalidate \

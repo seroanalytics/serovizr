@@ -13,11 +13,16 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
       res$setHeader("Access-Control-Allow-Credentials", "true")
     }
 
-    if (!is.null(req$session$id)) {
-      id <- as.character(req$session$id)
-      cache$set(id, TRUE)
-    }
-    prune_inactive_sessions(cache)
+    tryCatch({
+      if (!is.null(req$session$id)) {
+        logger::log_info("Updating session cache")
+        id <- as.character(req$session$id)
+        cache$set(id, TRUE)
+      }
+      logger::log_info("Looking for inactive sessions")
+      prune_inactive_sessions(cache)
+    }, error = function(e) logger::log_error(conditionMessage(e)))
+
     value
   })
 
