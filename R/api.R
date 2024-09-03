@@ -50,7 +50,7 @@ target_post_dataset <- function(req, res) {
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
-  porcelain:::response_success(jsonlite::unbox(filename))
+  response_success(jsonlite::unbox(filename))
 }
 
 target_get_dataset <- function(name, req) {
@@ -197,4 +197,10 @@ generate_session_id <- function() {
                              as.raw(sample(48:57,
                                            5,
                                            replace = TRUE))))))
+}
+
+response_success <- function(data)
+{
+  list(status = jsonlite::unbox("success"), errors = NULL,
+       data = data)
 }
