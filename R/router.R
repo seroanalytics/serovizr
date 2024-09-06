@@ -1,5 +1,5 @@
 build_routes <- function(cookie_key = plumber::random_cookie_key(),
-                         cache = cachem::cache_mem(max_age = 60)) {
+                         cache = cachem::cache_mem(max_age = 3600 * 60)) {
   if (!dir.exists("uploads")) {
     dir.create("uploads")
   }
@@ -28,8 +28,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
 
   pr$registerHooks(plumber::session_cookie(cookie_key,
                                            name = "serovizr",
-                                           path = "/",
-                                           expiration = 60))
+                                           path = "/"))
 
   pr$handle(get_root())
   pr$handle(get_version())

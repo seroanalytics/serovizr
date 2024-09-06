@@ -110,15 +110,104 @@ test_that("existing session id is used if present on GET /dataset/trace/", {
   expect_equal(res$status, 200)
 
   get_request_without_cookie <- make_req("GET",
-                          "/dataset/testdataset/trace/ab/")
+                                         "/dataset/testdataset/trace/ab/")
 
   res <- router$call(get_request_without_cookie)
   expect_equal(res$status, 404)
 
   get_request_with_cookie <- make_req("GET",
-                          "/dataset/testdataset/trace/ab/",
-                          HTTP_COOKIE = cookie)
+                                      "/dataset/testdataset/trace/ab/",
+                                      HTTP_COOKIE = cookie)
 
   res <- router$call(get_request_with_cookie)
   expect_equal(res$status, 200)
+})
+
+test_that("cache is updated on each request", {
+  key <- plumber::random_cookie_key()
+  cache <- cachem::cache_mem(max_age = 1)
+  router <- build_routes(key, cache)
+  session <- list(id = "1234")
+  cookie <- plumber:::cookieToStr("serovizr",
+                                  plumber:::encodeCookie(session,
+                                                         plumber:::asCookieKey(key)))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time",
+                                        session = "1234",
+                                        cookie = cookie)
+  res <- router$call(request)
+  expect_equal(res$status, 200)
+  expect_equal(cache$get("1234"), TRUE)
+
+  Sys.sleep(1)
+
+  # expect session to have expired from cache
+  expect_equal(length(cache$keys()), 0)
+
+  get_request_with_cookie <- make_req("GET",
+                                      "/dataset/testdataset/trace/ab/",
+                                      HTTP_COOKIE = cookie)
+
+  res <- router$call(get_request_with_cookie)
+  expect_equal(res$status, 200)
+
+  # expect session to have been re-added to cache
+  expect_equal(cache$get("1234"), TRUE)
+})
+
+
+test_that("inactive uploads are purged", {
+  key <- plumber::random_cookie_key()
+  cache <- cachem::cache_mem(max_age = 1)
+  router <- build_routes(key, cache)
+  old_session <- list(id = "1234")
+  old_cookie <- plumber:::cookieToStr("serovizr",
+                                      plumber:::encodeCookie(old_session,
+                                                             plumber:::asCookieKey(key)))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time",
+                                        session = "1234",
+                                        cookie = old_cookie)
+  expect_true(dir.exists("uploads/1234"))
+
+  Sys.sleep(1)
+
+  new_session <- list(id = "5678")
+  new_cookie <- plumber:::cookieToStr("serovizr",
+                                      plumber:::encodeCookie(new_session,
+                                                             plumber:::asCookieKey(key)))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   time = 1:10,
+                                                   value = 1),
+                                        "testdataset",
+                                        xcol = "time",
+                                        session = "1234",
+                                        cookie = new_cookie)
+  res <- router$call(request)
+  expect_equal(res$status, 200)
+
+  Sys.sleep(1)
+
+  # expect both sessions to have expired from cache
+  expect_equal(length(cache$keys()), 0)
+
+  get_request_with_new_cookie <- make_req("GET",
+                                      "/dataset/testdataset/trace/ab/",
+                                      HTTP_COOKIE = new_cookie)
+
+  res <- router$call(get_request_with_new_cookie)
+  expect_equal(res$status, 200)
+
+  get_request_with_old_cookie <- make_req("GET",
+                                          "/dataset/testdataset/trace/ab/",
+                                          HTTP_COOKIE = old_cookie)
+
+  res <- router$call(get_request_with_old_cookie)
+  expect_equal(res$status, 404)
 })
