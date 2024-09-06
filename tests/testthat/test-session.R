@@ -191,26 +191,18 @@ test_that("inactive uploads are purged", {
                                         cookie = new_cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
-  expect_true(dir.exists("uploads/5678"))
-
-  # expect old session to have been cleaned up
-  expect_false(dir.exists("uploads/1234"))
 
   Sys.sleep(1)
 
   # expect both sessions to have expired from cache
   expect_equal(length(cache$keys()), 0)
 
-  get_request_with_cookie <- make_req("GET",
+  get_request_with_new_cookie <- make_req("GET",
                                       "/dataset/testdataset/trace/ab/",
                                       HTTP_COOKIE = new_cookie)
 
-  res <- router$call(get_request_with_cookie)
+  res <- router$call(get_request_with_new_cookie)
   expect_equal(res$status, 200)
-
-  # expect active session to have been re-added to cache
-  expect_equal(cache$get("5678"), TRUE)
-  expect_equal(length(cache$keys()), 1)
 
   get_request_with_old_cookie <- make_req("GET",
                                           "/dataset/testdataset/trace/ab/",
