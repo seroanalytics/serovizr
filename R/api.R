@@ -207,8 +207,7 @@ generate_session_id <- function() {
                                            replace = TRUE))))))
 }
 
-response_success <- function(data)
-{
+response_success <- function(data) {
   list(status = jsonlite::unbox("success"), errors = NULL,
        data = data)
 }
