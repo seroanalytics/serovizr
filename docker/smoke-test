@@ -12,7 +12,7 @@ wait_for()
         if [[ $result -eq "200" ]]; then
             end_ts=$(date +%s)
             echo "App available after $((end_ts - start_ts)) seconds"
-            break
+            exit 0
         fi
         sleep 1
         echo "...still waiting"
