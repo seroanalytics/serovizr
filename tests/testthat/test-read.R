@@ -71,6 +71,25 @@ test_that("can get trace for uploaded dataset with xcol", {
   expect_equal(body$data, jsonlite::fromJSON(expected))
 })
 
+test_that("GET /trace/<biomarker>?scale= returns 400 if invalid scale", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1,
+                    day = 1:10,
+                    age = "0-5",
+                    sex = c("M", "F"))
+  local_add_dataset(dat, name = "testdataset")
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "scale=bad",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 400)
+  validate_failure_schema(res$body)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$errors[1, "detail"],
+               "'scale' must be one of 'log', 'log2', or 'natural'")
+})
+
 test_that("can get disgagregated traces", {
   dat <- data.frame(biomarker = "ab",
                     value = 1,
@@ -163,3 +182,48 @@ test_that("can get disaggregated and filtered traces", {
   expect_equal(data$raw[2, "x"], list(c(3, 7, 11, 15, 19)))
   expect_equal(data$raw[2, "y"], list(c(2, 2, 2, 2, 2)))
 })
+
+test_that("can get log data", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = 1:5)
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "scale=log",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(nrow(data), 1)
+  expect_equal(data$name, "all")
+  expect_equal(data$raw[1, "x"], list(1:5))
+  expect_equal(unlist(data$raw[1, "y"]),
+               jsonlite::fromJSON(
+                 jsonlite::toJSON(log(1:5)) # convert to/from json for consistent rounding
+               ))
+})
+
+test_that("can get log2 data", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = 1:5)
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "scale=log2",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(nrow(data), 1)
+  expect_equal(data$name, "all")
+  expect_equal(data$raw[1, "x"], list(1:5))
+  expect_equal(unlist(data$raw[1, "y"]),
+               jsonlite::fromJSON(
+                 jsonlite::toJSON(log2(1:5)) # convert to/from json for consistent rounding
+               ))
+})
+

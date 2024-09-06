@@ -78,7 +78,8 @@ get_trace <- function() {
     "/dataset/<name>/trace/<biomarker>/",
     target_get_trace,
     porcelain::porcelain_input_query(disaggregate = "string",
-                                     filter = "string"),
+                                     filter = "string",
+                                     scale = "string"),
     returning = porcelain::porcelain_returning_json("DataSeries"))
 }
 

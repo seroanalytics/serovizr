@@ -55,7 +55,7 @@ target_post_dataset <- function(req, res) {
 
 target_get_dataset <- function(name, req) {
   logger::log_info(paste("Requesting metadata for dataset:", name))
-  dataset <- read_dataset(req, name)
+  dataset <- read_dataset(req, name, "natural")
   logger::log_info(paste("Found dataset:", name))
   dat <- dataset$data
   xcol <- dataset$xcol
@@ -90,10 +90,11 @@ target_get_trace <- function(name,
                              biomarker,
                              req,
                              filter = NULL,
-                             disaggregate = NULL) {
+                             disaggregate = NULL,
+                             scale = "natural") {
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  dataset <- read_dataset(req, name)
+  dataset <- read_dataset(req, name, scale)
   dat <- dataset$data
   xcol <- dataset$xcol
   cols <- colnames(dat)
@@ -128,7 +129,8 @@ target_get_trace <- function(name,
   }
 }
 
-read_dataset <- function(req, name) {
+read_dataset <- function(req, name, scale) {
+  validate_scale(scale)
   session_id <- get_or_create_session_id(req)
   path <- file.path("uploads", session_id, name)
   if (!file.exists(path)) {
@@ -137,6 +139,12 @@ read_dataset <- function(req, name) {
   }
   dat <- utils::read.csv(file.path(path, "data"))
   dat$value <- as.numeric(dat$value)
+  if (scale == "log") {
+    dat$value <- log(dat$value)
+  }
+  if (scale == "log2") {
+    dat$value <- log2(dat$value)
+  }
   xcol <- readLines(file.path(path, "xcol"))
   list(data = dat, xcol = xcol)
 }
@@ -199,8 +207,7 @@ generate_session_id <- function() {
                                            replace = TRUE))))))
 }
 
-response_success <- function(data)
-{
+response_success <- function(data) {
   list(status = jsonlite::unbox("success"), errors = NULL,
        data = data)
 }
