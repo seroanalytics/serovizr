@@ -160,7 +160,7 @@ read_dataset <- function(req, name, scale) {
   list(data = dat, xcol = xcol)
 }
 
-model_out <- function(dat, xcol, method, span, k) {
+model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
