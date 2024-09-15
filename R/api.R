@@ -159,6 +159,7 @@ read_dataset <- function(req, name, scale) {
   if (scale == "log2") {
     dat$value <- log2(dat$value)
   }
+  xcol <- readLines(file.path(path, "xcol"))
   if (all(is.na(as.numeric(dat[, xcol])))) {
     xtype <- "date"
     dat[, xcol] <- as.Date(lubridate::parse_date_time(dat[, xcol],
@@ -166,7 +167,6 @@ read_dataset <- function(req, name, scale) {
   } else {
     xtype <- "number"
   }
-  xcol <- readLines(file.path(path, "xcol"))
   list(data = dat, xcol = xcol, xtype = xtype)
 }
 
