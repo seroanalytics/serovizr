@@ -160,11 +160,19 @@ read_dataset <- function(req, name, scale) {
     dat$value <- log2(dat$value)
   }
   xcol <- readLines(file.path(path, "xcol"))
+  logger::log_info("Parsing x column values")
   if (all(is.na(as.numeric(dat[, xcol])))) {
     xtype <- "date"
     dat[, xcol] <- as.Date(lubridate::parse_date_time(dat[, xcol],
                                               c("dmy", "mdy", "ymd", "ydm")))
+    if (all(is.na(dat[, xcol]))) {
+      msg <- paste("Invalid x column values:",
+                   "these should be numbers or dates in a standard format")
+      porcelain::porcelain_stop(msg)
+    }
+    logger::log_info("Detected date values in x column")
   } else {
+    logger::log_info("Deteced numeric values in x column")
     xtype <- "number"
   }
   list(data = dat, xcol = xcol, xtype = xtype)
