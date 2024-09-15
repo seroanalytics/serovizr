@@ -72,7 +72,7 @@ target_get_dataset <- function(name, req) {
   variables <- list()
   for (col in cols) {
     lvls <- unique(dat[, col])
-    if (length(lvls) < 12) {
+    if (length(lvls) < 25) {
       variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
     }
   }
@@ -100,6 +100,7 @@ target_get_trace <- function(name,
   dataset <- read_dataset(req, name, scale)
   dat <- dataset$data
   xcol <- dataset$xcol
+  xtype <- dataset$xtype
   cols <- colnames(dat)
   if (!is.null(filter)) {
     filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
@@ -117,6 +118,7 @@ target_get_trace <- function(name,
     return(lapply(seq_along(groups), function(i) {
       model <- with_warnings(model_out(groups[[i]],
                                        xcol = xcol,
+                                       xtype = xtype,
                                        method = method,
                                        span = span,
                                        k = k))
@@ -129,6 +131,7 @@ target_get_trace <- function(name,
     logger::log_info("Returning single trace")
     model <- with_warnings(model_out(dat,
                                      xcol = xcol,
+                                     xtype = xtype,
                                      method = method,
                                      span = span,
                                      k = k))
@@ -156,11 +159,18 @@ read_dataset <- function(req, name, scale) {
   if (scale == "log2") {
     dat$value <- log2(dat$value)
   }
+  if (all(is.na(as.numeric(dat[, xcol])))) {
+    xtype <- "date"
+    dat[, xcol] <- as.Date(lubridate::parse_date_time(dat[, xcol],
+                                              c("dmy", "mdy", "ymd", "ydm")))
+  } else {
+    xtype <- "number"
+  }
   xcol <- readLines(file.path(path, "xcol"))
-  list(data = dat, xcol = xcol)
+  list(data = dat, xcol = xcol, xtype = xtype)
 }
 
-model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
+model_out <- function(dat, xcol, xtype, method = "auto", span = 0.75, k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
@@ -170,13 +180,16 @@ model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
     m <- mgcv::gam(eval(parse(text = fmla)),
                    data = dat, method = "REML")
   } else {
-    fmla <- sprintf("value ~ %s", xcol)
+    fmla <- sprintf("value ~ as.numeric(%s)", xcol)
     m <- stats::loess(fmla, data = dat, span = span)
   }
   range <- range(dat[, xcol], na.rm = TRUE)
   xseq <- range[1]:range[2]
   xdf <- tibble::tibble(xcol = xseq)
   names(xdf) <- xcol
+  if (xtype == "date") {
+    xseq <- format(as.Date(xseq, origin = "1970-01-01"))
+  }
   list(x = xseq, y = stats::predict(m, xdf))
 }
 
