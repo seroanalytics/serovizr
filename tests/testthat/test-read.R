@@ -227,3 +227,65 @@ test_that("can get log2 data", {
                ))
 })
 
+test_that("can use loess model options", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = 1:5)
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "method=loess&span=0.5",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+
+  suppressWarnings(m <- stats::loess(value ~ day, data = dat, span = 0.5))
+  xdf <- tibble::tibble(day = 1:5)
+  expected <- stats::predict(m, xdf)
+  expect_equal(unlist(data$model[1, "y"]),
+               jsonlite::fromJSON(
+                 jsonlite::toJSON(expected) # convert to/from json for consistent rounding
+               ))
+})
+
+test_that("can use gam model options", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = 1:5)
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "method=gam&k=2",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  suppressWarnings(m <- mgcv::gam(value ~ s(day, bs = "cs", k = 2),
+                                  data = dat, method = "REML"))
+  xdf <- tibble::tibble(day = 1:5)
+  expected <- stats::predict(m, xdf)
+  expect_equal(unlist(data$model[1, "y"]),
+               jsonlite::fromJSON(
+                 jsonlite::toJSON(expected) # convert to/from json for consistent rounding
+               ))
+})
+
+test_that("error running the model results in a 400", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = 1:5)
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "method=gam&k=10",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 400)
+  validate_failure_schema(res$body)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$errors[1, "detail"],
+               "day has insufficient unique values to support 10 knots: reduce k.")
+})

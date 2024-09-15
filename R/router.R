@@ -78,7 +78,10 @@ get_trace <- function() {
     target_get_trace,
     porcelain::porcelain_input_query(disaggregate = "string",
                                      filter = "string",
-                                     scale = "string"),
+                                     scale = "string",
+                                     method = "string",
+                                     span = "numeric",
+                                     k = "numeric"),
     returning = porcelain::porcelain_returning_json("DataSeries"))
 }
 

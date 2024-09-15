@@ -6,7 +6,11 @@ with_warnings <- function(expr) {
     invokeRestart("muffleWarning")
   }
 
-  val <- withCallingHandlers(expr, warning = w_handler)
+  e_handler <- function(e) {
+    porcelain::porcelain_stop(jsonlite::unbox(conditionMessage(e)))
+  }
+
+  val <- withCallingHandlers(expr, warning = w_handler, error = e_handler)
   list(output = val,
        warnings = my_warnings)
 }

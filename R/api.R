@@ -91,7 +91,10 @@ target_get_trace <- function(name,
                              req,
                              filter = NULL,
                              disaggregate = NULL,
-                             scale = "natural") {
+                             scale = "natural",
+                             method = "auto",
+                             span = 0.75,
+                             k = 10) {
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
   dataset <- read_dataset(req, name, scale)
@@ -112,7 +115,11 @@ target_get_trace <- function(name,
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
     nms <- names(groups)
     return(lapply(seq_along(groups), function(i) {
-      model <- with_warnings(model_out(groups[[i]], xcol))
+      model <- with_warnings(model_out(groups[[i]],
+                                       xcol = xcol,
+                                       method = method,
+                                       span = span,
+                                       k = k))
       list(name = jsonlite::unbox(nms[[i]]),
            model = model$output,
            raw = data_out(groups[[i]], xcol),
@@ -120,7 +127,11 @@ target_get_trace <- function(name,
     }))
   } else {
     logger::log_info("Returning single trace")
-    model <- with_warnings(model_out(dat, xcol))
+    model <- with_warnings(model_out(dat,
+                                     xcol = xcol,
+                                     method = method,
+                                     span = span,
+                                     k = k))
     nm <- ifelse(is.null(filter), "all", filter)
     return(list(list(name = jsonlite::unbox(nm),
                      model = model$output,
@@ -149,16 +160,18 @@ read_dataset <- function(req, name, scale) {
   list(data = dat, xcol = xcol)
 }
 
-model_out <- function(dat, xcol) {
+model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
   }
-  if (n > 1000) {
-    m <- mgcv::gam(value ~ s(eval(parse(text = xcol)), bs = "cs"),
+  if ((n > 1000 && method == "auto") || method == "gam") {
+    fmla <- sprintf("value ~ s(%s, bs   = 'cs', k = %f)", xcol, k)
+    m <- mgcv::gam(eval(parse(text = fmla)),
                    data = dat, method = "REML")
   } else {
-    m <- stats::loess(value ~ eval(parse(text = xcol)), data = dat, span = 0.75)
+    fmla <- sprintf("value ~ %s", xcol)
+    m <- stats::loess(fmla, data = dat, span = span)
   }
   range <- range(dat[, xcol], na.rm = TRUE)
   xseq <- range[1]:range[2]
