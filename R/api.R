@@ -46,10 +46,25 @@ target_post_dataset <- function(req, res) {
     return(bad_request_response(msg))
   }
 
+  if (suppressWarnings(all(is.na(as.numeric(file_body[, xcol]))))) {
+    xtype <- "date"
+    file_body[, xcol] <- parse_date(file_body[, xcol])
+    if (suppressWarnings(all(is.na(file_body[, xcol])))) {
+      msg <- paste("Invalid x column values:",
+                   "these should be numbers or dates in a standard format")
+      return(bad_request_response(msg))
+    }
+    logger::log_info("Detected date values in x column")
+  } else {
+    logger::log_info("Detected numeric values in x column")
+    xtype <- "number"
+  }
+
   logger::log_info(paste("Saving dataset", filename, "to disk"))
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
+  write(xtype, file.path(path, "xtype"))
   response_success(jsonlite::unbox(filename))
 }
 
@@ -160,20 +175,10 @@ read_dataset <- function(req, name, scale) {
     dat$value <- log2(dat$value)
   }
   xcol <- readLines(file.path(path, "xcol"))
+  xtype <- readLines(file.path(path, "xtype"))
   logger::log_info("Parsing x column values")
-  if (suppressWarnings(all(is.na(as.numeric(dat[, xcol]))))) {
-    xtype <- "date"
-    dat[, xcol] <- as.Date(lubridate::parse_date_time(dat[, xcol],
-                                              c("dmy", "mdy", "ymd", "ydm")))
-    if (suppressWarnings(all(is.na(dat[, xcol])))) {
-      msg <- paste("Invalid x column values:",
-                   "these should be numbers or dates in a standard format")
-      porcelain::porcelain_stop(msg)
-    }
-    logger::log_info("Detected date values in x column")
-  } else {
-    logger::log_info("Deteced numeric values in x column")
-    xtype <- "number"
+  if (xtype == "date") {
+    dat[, xcol] <- as.Date(dat[, xcol], origin = "1970-01-01")
   }
   list(data = dat, xcol = xcol, xtype = xtype)
 }

@@ -296,7 +296,10 @@ test_that("can get dataset with dates", {
                     value = 1:5,
                     day = dates)
   router <- build_routes(cookie_key)
-  local_add_dataset(dat, name = "testdataset")
+  post_request <- local_POST_dataset_request(dat,
+                                             "testdataset",
+                                             cookie = cookie)
+  expect_equal(router$call(post_request)$status, 200)
   res <- router$call(make_req("GET",
                               "/dataset/testdataset/trace/ab/",
                               HTTP_COOKIE = cookie))
