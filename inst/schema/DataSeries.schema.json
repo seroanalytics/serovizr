@@ -42,17 +42,17 @@
             }
           }
         },
-        "warnings": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "required": ["x", "y"],
         "additionalProperties": false
+      },
+      "warnings": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
       }
     },
     "required": ["model", "raw", "warnings"],
-    "additionalProperties": true
+    "additionalProperties": false
   }
 }
