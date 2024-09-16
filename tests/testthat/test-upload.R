@@ -46,6 +46,23 @@ test_that("uploading dataset with duplicate name returns 400", {
                "testdataset already exists. Please choose a unique name for this dataset.")
 })
 
+test_that("uploading dataset with invalid xcol values returns 400", {
+  router <- build_routes(cookie_key)
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   day = c("a", "b"),
+                                                   value = 1),
+                                        "testdataset",
+                                        cookie = cookie)
+  res <- router$call(request)
+  expect_equal(res$status, 400)
+
+  res <- router$call(request)
+  body <- jsonlite::fromJSON(res$body)
+  validate_failure_schema(res$body)
+  expect_equal(body$errors[1, "detail"],
+               "Invalid x column values: these should be numbers or dates in a standard format.")
+})
+
 test_that("can upload dataset with different xcol", {
   router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",

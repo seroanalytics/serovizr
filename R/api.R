@@ -48,10 +48,11 @@ target_post_dataset <- function(req, res) {
 
   if (suppressWarnings(all(is.na(as.numeric(file_body[, xcol]))))) {
     xtype <- "date"
-    file_body[, xcol] <- parse_date(file_body[, xcol])
-    if (suppressWarnings(all(is.na(file_body[, xcol])))) {
+    suppressWarnings({file_body[, xcol] <- parse_date(file_body[, xcol])})
+    if (all(is.na(file_body[, xcol]))) {
+      res$status <- 400L
       msg <- paste("Invalid x column values:",
-                   "these should be numbers or dates in a standard format")
+                   "these should be numbers or dates in a standard format.")
       return(bad_request_response(msg))
     }
     logger::log_info("Detected date values in x column")
