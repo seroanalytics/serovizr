@@ -46,7 +46,7 @@
         "additionalProperties": false
       },
       "warnings": {
-        "type": "array",
+        "type": ["array", "null"],
         "items": {
           "type": "string"
         }
