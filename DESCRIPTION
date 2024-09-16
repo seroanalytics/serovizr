@@ -16,6 +16,7 @@ Imports:
     fs,
     jsonlite,
     logger,
+    lubridate,
     mgcv,
     mime,
     plumber,
