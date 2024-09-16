@@ -81,3 +81,25 @@ test_that("y/d/m", {
   data <- body$data
   expect_equal(unlist(data$raw[1, "x"]), rep(c("2024-01-14", "2024-01-15"), 5))
 })
+
+test_that("using gam", {
+  router <- build_routes(cookie_key)
+  dates <- sapply(1:50, function(x) format(as.Date(2 * x, origin = "2023-01-01")))
+  request <- local_POST_dataset_request(data.frame(biomarker = "ab",
+                                                   day = dates,
+                                                   value = 1:10),
+                                        "testdataset",
+                                        cookie = cookie)
+  upload_res <- router$call(request)
+  expect_equal(upload_res$status, 200)
+
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "method=gam",
+                              HTTP_COOKIE = cookie))
+
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(unlist(data$raw[1, "x"]), dates)
+})

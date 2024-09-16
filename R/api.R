@@ -195,12 +195,13 @@ model_out <- function(dat, xcol,
   if (n == 0) {
     return(list(x = list(), y = list()))
   }
+  dat[, xcol] <- as.numeric(dat[, xcol])
   if ((n > 1000 && method == "auto") || method == "gam") {
     fmla <- sprintf("value ~ s(%s, bs   = 'cs', k = %f)", xcol, k)
     m <- mgcv::gam(eval(parse(text = fmla)),
                    data = dat, method = "REML")
   } else {
-    fmla <- sprintf("value ~ as.numeric(%s)", xcol)
+    fmla <- sprintf("value ~ %s", xcol)
     m <- stats::loess(fmla, data = dat, span = span)
   }
   range <- range(dat[, xcol], na.rm = TRUE)
