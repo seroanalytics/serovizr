@@ -17,6 +17,7 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         docopt \
         fs \
         logger \
+        lubridate \
         jsonlite \
         jsonvalidate \
         plumber \

@@ -66,3 +66,19 @@ test_that("model uses loess options", {
 
   expect_true(all(res$y == expected))
 })
+
+test_that("model can handle dates", {
+  dates <- sapply(1:50, function(x) as.Date(2 * x, origin = "2023-01-01"))
+  full_range <- sapply(2:100, function(x) as.Date(x, origin = "2023-01-01"))
+  dat <- data.frame(date = dates, value = rnorm(50))
+  res <- model_out(dat, xcol = "date", xtype = "date")
+
+  m <- stats::loess(value ~ as.numeric(date), data = dat)
+  xdf <- tibble::tibble(date = full_range)
+  expected <- stats::predict(m, xdf)
+
+  expect_true(all(res$y == expected))
+  expect_equal(res$x[1], "2023-01-03")
+  expect_equal(res$x[2], "2023-01-04")
+  expect_equal(res$x[99], "2023-04-11")
+})

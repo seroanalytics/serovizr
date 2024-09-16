@@ -289,3 +289,34 @@ test_that("error running the model results in a 400", {
   expect_equal(body$errors[1, "detail"],
                "day has insufficient unique values to support 10 knots: reduce k.")
 })
+
+test_that("can get dataset with dates", {
+  dates <- c("2023/15/01", "2023/16/01", "2023/17/01", "2023/18/01", "2023/20/01")
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:5,
+                    day = dates)
+  router <- build_routes(cookie_key)
+  post_request <- local_POST_dataset_request(dat,
+                                             "testdataset",
+                                             cookie = cookie)
+  expect_equal(router$call(post_request)$status, 200)
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(nrow(data), 1)
+  expect_equal(data$name, "all")
+  expect_equal(unlist(data$raw[1, "x"]), c("2023-01-15", "2023-01-16", "2023-01-17", "2023-01-18", "2023-01-20"))
+  expect_equal(unlist(data$raw[1, "y"]), 1:5)
+
+  full_range_dates <- c("2023-01-15", "2023-01-16", "2023-01-17", "2023-01-18", "2023-01-19", "2023-01-20")
+  expect_equal(unlist(data$model[1, "x"]), full_range_dates)
+  parsed <- lubridate::parse_date_time(dates, c("dmy", "mdy", "ymd", "ydm"))
+  suppressWarnings({m <- stats::loess(value ~ as.numeric(day), data = data.frame(day = parsed,
+                                                               value = 1:5))})
+  parsed_full_range <- lubridate::parse_date_time(full_range_dates, c("dmy", "mdy", "ymd", "ydm"))
+  expected <- stats::predict(m, parsed_full_range)
+  expect_equal(unlist(data$model[1, "y"]), expected)
+})

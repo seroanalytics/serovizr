@@ -46,10 +46,28 @@ target_post_dataset <- function(req, res) {
     return(bad_request_response(msg))
   }
 
+  if (suppressWarnings(all(is.na(as.numeric(file_body[, xcol]))))) {
+    xtype <- "date"
+    suppressWarnings({
+      file_body[, xcol] <- parse_date(file_body[, xcol])
+    })
+    if (all(is.na(file_body[, xcol]))) {
+      res$status <- 400L
+      msg <- paste("Invalid x column values:",
+                   "these should be numbers or dates in a standard format.")
+      return(bad_request_response(msg))
+    }
+    logger::log_info("Detected date values in x column")
+  } else {
+    logger::log_info("Detected numeric values in x column")
+    xtype <- "number"
+  }
+
   logger::log_info(paste("Saving dataset", filename, "to disk"))
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
+  write(xtype, file.path(path, "xtype"))
   response_success(jsonlite::unbox(filename))
 }
 
@@ -72,7 +90,7 @@ target_get_dataset <- function(name, req) {
   variables <- list()
   for (col in cols) {
     lvls <- unique(dat[, col])
-    if (length(lvls) < 12) {
+    if (length(lvls) < 25) {
       variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
     }
   }
@@ -100,6 +118,7 @@ target_get_trace <- function(name,
   dataset <- read_dataset(req, name, scale)
   dat <- dataset$data
   xcol <- dataset$xcol
+  xtype <- dataset$xtype
   cols <- colnames(dat)
   if (!is.null(filter)) {
     filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
@@ -117,6 +136,7 @@ target_get_trace <- function(name,
     return(lapply(seq_along(groups), function(i) {
       model <- with_warnings(model_out(groups[[i]],
                                        xcol = xcol,
+                                       xtype = xtype,
                                        method = method,
                                        span = span,
                                        k = k))
@@ -129,6 +149,7 @@ target_get_trace <- function(name,
     logger::log_info("Returning single trace")
     model <- with_warnings(model_out(dat,
                                      xcol = xcol,
+                                     xtype = xtype,
                                      method = method,
                                      span = span,
                                      k = k))
@@ -157,10 +178,19 @@ read_dataset <- function(req, name, scale) {
     dat$value <- log2(dat$value)
   }
   xcol <- readLines(file.path(path, "xcol"))
-  list(data = dat, xcol = xcol)
+  xtype <- readLines(file.path(path, "xtype"))
+  logger::log_info("Parsing x column values")
+  if (xtype == "date") {
+    dat[, xcol] <- as.Date(dat[, xcol], origin = "1970-01-01")
+  }
+  list(data = dat, xcol = xcol, xtype = xtype)
 }
 
-model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
+model_out <- function(dat, xcol,
+                           xtype = "number",
+                           method = "auto",
+                           span = 0.75,
+                           k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
@@ -170,13 +200,16 @@ model_out <- function(dat, xcol, method = "auto", span = 0.75, k = 10) {
     m <- mgcv::gam(eval(parse(text = fmla)),
                    data = dat, method = "REML")
   } else {
-    fmla <- sprintf("value ~ %s", xcol)
+    fmla <- sprintf("value ~ as.numeric(%s)", xcol)
     m <- stats::loess(fmla, data = dat, span = span)
   }
   range <- range(dat[, xcol], na.rm = TRUE)
   xseq <- range[1]:range[2]
   xdf <- tibble::tibble(xcol = xseq)
   names(xdf) <- xcol
+  if (xtype == "date") {
+    xseq <- format(as.Date(xseq, origin = "1970-01-01"))
+  }
   list(x = xseq, y = stats::predict(m, xdf))
 }
 

@@ -22,3 +22,8 @@ validate_scale <- function(scale) {
     )
   }
 }
+
+parse_date <- function(dat) {
+  as.Date(lubridate::parse_date_time(dat,
+                                     c("dmy", "mdy", "ymd", "ydm")))
+}

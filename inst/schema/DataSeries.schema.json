@@ -13,7 +13,7 @@
           "x": {
             "type": "array",
             "items": {
-              "type": "number"
+              "type": ["number", "string"]
             }
           },
           "y": {
@@ -32,7 +32,7 @@
           "x": {
             "type": "array",
             "items": {
-              "type": "number"
+              "type": ["number", "string"]
             }
           },
           "y": {
