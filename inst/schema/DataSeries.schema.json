@@ -13,7 +13,7 @@
           "x": {
             "type": "array",
             "items": {
-              "type": ["number", "string"]
+              "type": ["number", "string", "null"]
             }
           },
           "y": {
@@ -32,7 +32,7 @@
           "x": {
             "type": "array",
             "items": {
-              "type": ["number", "string"]
+              "type": ["number", "string", "null"]
             }
           },
           "y": {
@@ -52,7 +52,7 @@
         }
       }
     },
-    "required": ["model", "raw", "warnings"],
+    "required": ["name", "model", "raw", "warnings"],
     "additionalProperties": false
   }
 }

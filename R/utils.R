@@ -2,12 +2,12 @@ with_warnings <- function(expr, stop_on_error = TRUE) {
   my_warnings <- NULL
 
   w_handler <- function(w) {
-    my_warnings <<- c(my_warnings, jsonlite::unbox(conditionMessage(w)))
+    my_warnings <<- unique(c(my_warnings, jsonlite::unbox(conditionMessage(w))))
     invokeRestart("muffleWarning")
   }
 
   e_handler_warn <- function(e) {
-    my_warnings <<- c(my_warnings, jsonlite::unbox(conditionMessage(e)))
+    my_warnings <<- unique(c(my_warnings, jsonlite::unbox(conditionMessage(e))))
     invokeRestart("muffleStop")
   }
 
