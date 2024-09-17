@@ -314,9 +314,29 @@ test_that("can get dataset with dates", {
   full_range_dates <- c("2023-01-15", "2023-01-16", "2023-01-17", "2023-01-18", "2023-01-19", "2023-01-20")
   expect_equal(unlist(data$model[1, "x"]), full_range_dates)
   parsed <- lubridate::parse_date_time(dates, c("dmy", "mdy", "ymd", "ydm"))
-  suppressWarnings({m <- stats::loess(value ~ as.numeric(day), data = data.frame(day = parsed,
-                                                               value = 1:5))})
+  suppressWarnings({ m <- stats::loess(value ~ as.numeric(day), data = data.frame(day = parsed,
+                                                                                  value = 1:5)) })
   parsed_full_range <- lubridate::parse_date_time(full_range_dates, c("dmy", "mdy", "ymd", "ydm"))
   expected <- stats::predict(m, parsed_full_range)
   expect_equal(unlist(data$model[1, "y"]), expected)
+})
+
+test_that("errors for disaggregated traces are returned as warnings", {
+  dat <- data.frame(biomarker = "ab",
+                    value = 1:10,
+                    day = 1:10,
+                    sex = c(rep("M", 9), "F"))
+  router <- build_routes(cookie_key)
+  local_add_dataset(dat, name = "testdataset")
+  res <- router$call(make_req("GET",
+                              "/dataset/testdataset/trace/ab/",
+                              qs = "method=gam&k=10&disaggregate=sex",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(data$warnings,
+               list("Not enough (non-NA) data to do anything meaningful",
+                    "day has insufficient unique values to support 10 knots: reduce k."))
+  expect_true(all(is.na(data$model)))
 })

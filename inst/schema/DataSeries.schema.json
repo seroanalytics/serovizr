@@ -8,12 +8,12 @@
         "type": "string"
       },
       "model": {
-        "type": "object",
+        "type": ["object", "null"],
         "properties": {
           "x": {
             "type": "array",
             "items": {
-              "type": ["number", "string"]
+              "type": ["number", "string", "null"]
             }
           },
           "y": {
@@ -32,7 +32,7 @@
           "x": {
             "type": "array",
             "items": {
-              "type": ["number", "string"]
+              "type": ["number", "string", "null"]
             }
           },
           "y": {
@@ -42,17 +42,17 @@
             }
           }
         },
-        "warnings": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
         "required": ["x", "y"],
         "additionalProperties": false
+      },
+      "warnings": {
+        "type": ["array", "null"],
+        "items": {
+          "type": "string"
+        }
       }
     },
-    "required": ["model", "raw", "warnings"],
-    "additionalProperties": true
+    "required": ["name", "model", "raw", "warnings"],
+    "additionalProperties": false
   }
 }

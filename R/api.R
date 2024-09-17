@@ -139,7 +139,7 @@ target_get_trace <- function(name,
                                        xtype = xtype,
                                        method = method,
                                        span = span,
-                                       k = k))
+                                       k = k), stop_on_error = FALSE)
       list(name = jsonlite::unbox(nms[[i]]),
            model = model$output,
            raw = data_out(groups[[i]], xcol),
