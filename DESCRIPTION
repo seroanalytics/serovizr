@@ -14,6 +14,7 @@ Imports:
     cachem,
     docopt,
     fs,
+    httpuv,
     jsonlite,
     logger,
     lubridate,

@@ -113,6 +113,7 @@ target_get_trace <- function(name,
                              method = "auto",
                              span = 0.75,
                              k = 10) {
+  biomarker <-  httpuv::decodeURIComponent(biomarker)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
   dataset <- read_dataset(req, name, scale)
