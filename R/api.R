@@ -90,9 +90,7 @@ target_get_dataset <- function(name, req) {
   variables <- list()
   for (col in cols) {
     lvls <- unique(dat[, col])
-    if (length(lvls) < 25) {
-      variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
-    }
+    variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
   }
   list(variables = unname(variables),
        biomarkers = biomarkers,
@@ -113,23 +111,15 @@ target_get_trace <- function(name,
                              method = "auto",
                              span = 0.75,
                              k = 10) {
-  biomarker <-  httpuv::decodeURIComponent(biomarker)
+  biomarker <- httpuv::decodeURIComponent(biomarker)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
   dataset <- read_dataset(req, name, scale)
   dat <- dataset$data
   xcol <- dataset$xcol
   xtype <- dataset$xtype
-  cols <- colnames(dat)
-  if (!is.null(filter)) {
-    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
-    logger::log_info(paste("Filtering by variables:", paste(filters,
-                                                            collapse = ", ")))
-    for (f in filters) {
-      dat <- apply_filter(f, dat, cols)
-    }
-  }
-  dat <- dat[dat["biomarker"] == biomarker, ]
+  dat <- apply_filters(dat, filter)
+  dat <- dat[dat["biomarker"] == biomarker,]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -162,6 +152,70 @@ target_get_trace <- function(name,
   }
 }
 
+target_get_individual <- function(req, name, pid,
+                                  scale,
+                                  filter = NULL,
+                                  color = NULL,
+                                  linetype = NULL,
+                                  page = 1) {
+
+  data <- read_dataset(req, name, scale)
+  dat <- data$data
+  xcol <- data$xcol
+  dat <- apply_filters(dat, filter)
+  if (is.null(color)) {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          linetype = .data[[linetype]])
+    }
+  } else {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]])
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]],
+                          linetype = .data[[linetype]])
+    }
+  }
+
+  warnings <- NULL
+  ids <- unique(dat[[pid]])
+  if (length(ids) > 20) {
+    warnings <- c(warnings, paste(length(ids), "individuals identified; only the first 20 will be shown"))
+    dat <- dat[dat[[pid]] %in% ids[1:20], ]
+  }
+
+  p <- with_warnings(ggplot2::ggplot(dat) +
+                       ggplot2::geom_line(aes) +
+                       ggplot2::facet_wrap(pid) +
+                       ggplot2::theme_bw() +
+                       ggplot2::labs(x = xcol, y = "Antibody titre",
+                                     linetype = linetype,
+                                     color = color))
+  warnings <- c(warnings, p$warnings)
+
+  q <- plotly::ggplotly(p$output)
+  jsonlite::toJSON(
+    list(data = as.list(q$x$data),
+         layout = as.list(q$x$layout),
+         warnings = warnings),
+    auto_unbox = TRUE, null = "null")
+}
+
+get_raw <- function(name, dat, disaggregate, xcol) {
+  groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
+  nms <- names(groups)
+  return(lapply(seq_along(groups), function(i) {
+    list(title = name,
+         name = jsonlite::unbox(nms[[i]]),
+         raw = data_out(groups[[i]], xcol))
+  }))
+}
+
+
 read_dataset <- function(req, name, scale) {
   validate_scale(scale)
   session_id <- get_or_create_session_id(req)
@@ -188,10 +242,10 @@ read_dataset <- function(req, name, scale) {
 }
 
 model_out <- function(dat, xcol,
-                           xtype = "number",
-                           method = "auto",
-                           span = 0.75,
-                           k = 10) {
+                      xtype = "number",
+                      method = "auto",
+                      span = 0.75,
+                      k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
@@ -229,7 +283,7 @@ apply_filter <- function(filter, dat, cols) {
                                     "not found in data"),
                               code = "BAD_REQUEST", status_code = 400L)
   }
-  dat[dat[filter_var] == filter_level, ]
+  dat[dat[filter_var] == filter_level,]
 }
 
 bad_request_response <- function(msg) {
@@ -258,4 +312,17 @@ generate_session_id <- function() {
 response_success <- function(data) {
   list(status = jsonlite::unbox("success"), errors = NULL,
        data = data)
+}
+
+apply_filters <- function(dat, filter) {
+  if (!is.null(filter)) {
+    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
+    logger::log_info(paste("Filtering by variables:", paste(filters,
+                                                            collapse = ", ")))
+    cols <- colnames(dat)
+    for (f in filters) {
+      dat <- apply_filter(f, dat, cols)
+    }
+  }
+  return(dat)
 }
