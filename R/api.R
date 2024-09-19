@@ -119,7 +119,7 @@ target_get_trace <- function(name,
   xcol <- dataset$xcol
   xtype <- dataset$xtype
   dat <- apply_filters(dat, filter)
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -166,7 +166,7 @@ target_get_individual <- function(req,
   dat <- data$data
   xcol <- data$xcol
 
-  if (!(pidcol %in% colnames(dat))){
+  if (!(pidcol %in% colnames(dat))) {
       porcelain::porcelain_stop(sprintf("Id column '%s' not found.", pidcol))
   }
 
@@ -192,8 +192,10 @@ target_get_individual <- function(req,
   warnings <- NULL
   ids <- unique(dat[[pidcol]])
   if (length(ids) > 20) {
-    warnings <- c(warnings, paste(length(ids), "individuals identified; only the first 20 will be shown."))
-    dat <- dat[dat[[pidcol]] %in% ids[1:20],]
+    msg <- paste(length(ids),
+                 "individuals identified; only the first 20 will be shown.")
+    warnings <- c(warnings, msg)
+    dat <- dat[dat[[pidcol]] %in% ids[1:20], ]
   }
 
   # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
@@ -307,7 +309,7 @@ apply_filter <- function(filter, dat, cols) {
                                     "not found in data"),
                               code = "BAD_REQUEST", status_code = 400L)
   }
-  dat[dat[filter_var] == filter_level,]
+  dat[dat[filter_var] == filter_level, ]
 }
 
 bad_request_response <- function(msg) {
