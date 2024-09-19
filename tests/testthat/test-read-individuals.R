@@ -209,7 +209,7 @@ test_that("can get dataset with dates", {
   body <- jsonlite::fromJSON(res$body)
   data <- body$data$data
   expect_equal(nrow(data), 1)
-  expect_equal(unlist(data[1, "x"]), as.numeric(ydm(dates)))
+  expect_equal(unlist(data[1, "x"]), as.numeric(lubridate::ydm(dates)))
   expect_equal(unlist(data[1, "y"]), 1:5)
 })
 
