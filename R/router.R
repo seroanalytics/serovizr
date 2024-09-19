@@ -89,7 +89,7 @@ get_trace <- function() {
 get_individual <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/dataset/<name>/individual/<pid>/",
+    "/dataset/<name>/individual/<pidcol>/",
     target_get_individual,
     porcelain::porcelain_input_query(scale = "string",
                                      color = "string",

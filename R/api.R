@@ -152,16 +152,23 @@ target_get_trace <- function(name,
   }
 }
 
-target_get_individual <- function(req, name, pid,
-                                  scale,
-                                  filter = NULL,
-                                  color = NULL,
-                                  linetype = NULL,
-                                  page = 1) {
+target_get_individual <- function(req,
+                                    name,
+                                    pidcol,
+                                    scale = "natural",
+                                    filter = NULL,
+                                    color = NULL,
+                                    linetype = NULL,
+                                    page = 1) {
 
   data <- read_dataset(req, name, scale)
   dat <- data$data
   xcol <- data$xcol
+
+  if (!(pidcol %in% colnames(dat))){
+      porcelain::porcelain_stop(sprintf("Id column '%s' not found.", pidcol))
+  }
+
   dat <- apply_filters(dat, filter)
   if (is.null(color)) {
     if (is.null(linetype)) {
@@ -182,15 +189,19 @@ target_get_individual <- function(req, name, pid,
   }
 
   warnings <- NULL
-  ids <- unique(dat[[pid]])
+  ids <- unique(dat[[pidcol]])
   if (length(ids) > 20) {
-    warnings <- c(warnings, paste(length(ids), "individuals identified; only the first 20 will be shown"))
-    dat <- dat[dat[[pid]] %in% ids[1:20], ]
+    warnings <- c(warnings, paste(length(ids), "individuals identified; only the first 20 will be shown."))
+    dat <- dat[dat[[pidcol]] %in% ids[1:20],]
   }
 
+  # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
+  # packages to generate the plotly data and layout objects is a bit slower
+  # than just generating data series in R and letting the front-end handle the
+  # presentation logic, but is much easier to get right!
   p <- with_warnings(ggplot2::ggplot(dat) +
                        ggplot2::geom_line(aes) +
-                       ggplot2::facet_wrap(pid) +
+                       ggplot2::facet_wrap(pidcol) +
                        ggplot2::theme_bw() +
                        ggplot2::labs(x = xcol, y = "Antibody titre",
                                      linetype = linetype,
@@ -214,7 +225,6 @@ get_raw <- function(name, dat, disaggregate, xcol) {
          raw = data_out(groups[[i]], xcol))
   }))
 }
-
 
 read_dataset <- function(req, name, scale) {
   validate_scale(scale)
@@ -273,6 +283,19 @@ data_out <- function(dat, xcol) {
   list(x = dat[, xcol], y = dat$value)
 }
 
+apply_filters <- function(dat, filter) {
+  if (!is.null(filter)) {
+    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
+    logger::log_info(paste("Filtering by variables:", paste(filters,
+                                                            collapse = ", ")))
+    cols <- colnames(dat)
+    for (f in filters) {
+      dat <- apply_filter(f, dat, cols)
+    }
+  }
+  return(dat)
+}
+
 apply_filter <- function(filter, dat, cols) {
   filter_def <- strsplit(filter, ":")
   filter_var <- filter_def[[1]][1]
@@ -312,17 +335,4 @@ generate_session_id <- function() {
 response_success <- function(data) {
   list(status = jsonlite::unbox("success"), errors = NULL,
        data = data)
-}
-
-apply_filters <- function(dat, filter) {
-  if (!is.null(filter)) {
-    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
-    logger::log_info(paste("Filtering by variables:", paste(filters,
-                                                            collapse = ", ")))
-    cols <- colnames(dat)
-    for (f in filters) {
-      dat <- apply_filter(f, dat, cols)
-    }
-  }
-  return(dat)
 }
