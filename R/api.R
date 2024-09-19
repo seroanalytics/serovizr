@@ -160,6 +160,7 @@ target_get_individual <- function(req,
                                     color = NULL,
                                     linetype = NULL,
                                     page = 1) {
+  .data <- value <- NULL
 
   data <- read_dataset(req, name, scale)
   dat <- data$data
