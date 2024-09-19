@@ -22,7 +22,6 @@ test_that("GET /individual/<pidcol> returns 400 if pidcol not found", {
   expect_equal(res$status, 400)
   validate_failure_schema(res$body)
   body <- jsonlite::fromJSON(res$body)
-  str(body)
   expect_equal(body$errors[1, "detail"],
                "Id column 'pid' not found.")
 })
@@ -44,7 +43,9 @@ test_that("can get individual trajectories for uploaded dataset with xcol", {
   res <- router$call(make_req("GET",
                               "/dataset/testdataset/individual/pid/",
                               HTTP_COOKIE = cookie))
+
   expect_equal(res$status, 200)
+
   body <- jsonlite::fromJSON(res$body)
   expect_equal(nrow(body$data$data), 2)
   expect_equal(body$data$data$x[[1]], c(1, 3, 5, 7, 9))
