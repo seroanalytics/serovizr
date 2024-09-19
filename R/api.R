@@ -90,9 +90,7 @@ target_get_dataset <- function(name, req) {
   variables <- list()
   for (col in cols) {
     lvls <- unique(dat[, col])
-    if (length(lvls) < 25) {
-      variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
-    }
+    variables[[col]] <- list(name = jsonlite::unbox(col), levels = lvls)
   }
   list(variables = unname(variables),
        biomarkers = biomarkers,
@@ -113,22 +111,14 @@ target_get_trace <- function(name,
                              method = "auto",
                              span = 0.75,
                              k = 10) {
-  biomarker <-  httpuv::decodeURIComponent(biomarker)
+  biomarker <- httpuv::decodeURIComponent(biomarker)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
   dataset <- read_dataset(req, name, scale)
   dat <- dataset$data
   xcol <- dataset$xcol
   xtype <- dataset$xtype
-  cols <- colnames(dat)
-  if (!is.null(filter)) {
-    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
-    logger::log_info(paste("Filtering by variables:", paste(filters,
-                                                            collapse = ", ")))
-    for (f in filters) {
-      dat <- apply_filter(f, dat, cols)
-    }
-  }
+  dat <- apply_filters(dat, filter)
   dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
@@ -162,6 +152,73 @@ target_get_trace <- function(name,
   }
 }
 
+target_get_individual <- function(req,
+                                    name,
+                                    pidcol,
+                                    scale = "natural",
+                                    filter = NULL,
+                                    color = NULL,
+                                    linetype = NULL,
+                                    page = 1) {
+  .data <- value <- NULL
+
+  data <- read_dataset(req, name, scale)
+  dat <- data$data
+  xcol <- data$xcol
+
+  if (!(pidcol %in% colnames(dat))) {
+      porcelain::porcelain_stop(sprintf("Id column '%s' not found.", pidcol))
+  }
+
+  dat <- apply_filters(dat, filter)
+  if (is.null(color)) {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          linetype = .data[[linetype]])
+    }
+  } else {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]])
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]],
+                          linetype = .data[[linetype]])
+    }
+  }
+
+  warnings <- NULL
+  ids <- unique(dat[[pidcol]])
+  if (length(ids) > 20) {
+    msg <- paste(length(ids),
+                 "individuals identified; only the first 20 will be shown.")
+    warnings <- c(warnings, msg)
+    dat <- dat[dat[[pidcol]] %in% ids[1:20], ]
+  }
+
+  # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
+  # packages to generate the plotly data and layout objects is a bit slower
+  # than just generating data series in R and letting the front-end handle the
+  # presentation logic, but is much easier to get right!
+  p <- with_warnings(ggplot2::ggplot(dat) +
+                       ggplot2::geom_line(aes) +
+                       ggplot2::facet_wrap(pidcol) +
+                       ggplot2::theme_bw() +
+                       ggplot2::labs(x = xcol, y = "Antibody titre",
+                                     linetype = linetype,
+                                     color = color))
+  warnings <- c(warnings, p$warnings)
+
+  q <- plotly::ggplotly(p$output)
+  jsonlite::toJSON(
+    list(data = as.list(q$x$data),
+         layout = as.list(q$x$layout),
+         warnings = warnings),
+    auto_unbox = TRUE, null = "null")
+}
+
 read_dataset <- function(req, name, scale) {
   validate_scale(scale)
   session_id <- get_or_create_session_id(req)
@@ -188,10 +245,10 @@ read_dataset <- function(req, name, scale) {
 }
 
 model_out <- function(dat, xcol,
-                           xtype = "number",
-                           method = "auto",
-                           span = 0.75,
-                           k = 10) {
+                      xtype = "number",
+                      method = "auto",
+                      span = 0.75,
+                      k = 10) {
   n <- nrow(dat)
   if (n == 0) {
     return(list(x = list(), y = list()))
@@ -217,6 +274,19 @@ model_out <- function(dat, xcol,
 
 data_out <- function(dat, xcol) {
   list(x = dat[, xcol], y = dat$value)
+}
+
+apply_filters <- function(dat, filter) {
+  if (!is.null(filter)) {
+    filters <- strsplit(filter, "+", fixed = TRUE)[[1]]
+    logger::log_info(paste("Filtering by variables:", paste(filters,
+                                                            collapse = ", ")))
+    cols <- colnames(dat)
+    for (f in filters) {
+      dat <- apply_filter(f, dat, cols)
+    }
+  }
+  return(dat)
 }
 
 apply_filter <- function(filter, dat, cols) {

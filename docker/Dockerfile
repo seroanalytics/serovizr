@@ -16,10 +16,12 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         callr \
         docopt \
         fs \
+        ggplot2 \
         logger \
         lubridate \
         jsonlite \
         jsonvalidate \
+        plotly \
         plumber \
         remotes \
         Rook \

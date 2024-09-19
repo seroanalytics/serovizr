@@ -38,6 +38,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle(get_dataset())
   pr$handle(get_datasets())
   pr$handle(get_trace())
+  pr$handle(get_individual())
 }
 
 get_root <- function() {
@@ -83,6 +84,18 @@ get_trace <- function() {
                                      span = "numeric",
                                      k = "numeric"),
     returning = porcelain::porcelain_returning_json("DataSeries"))
+}
+
+get_individual <- function() {
+  porcelain::porcelain_endpoint$new(
+    "GET",
+    "/dataset/<name>/individual/<pidcol>/",
+    target_get_individual,
+    porcelain::porcelain_input_query(scale = "string",
+                                     color = "string",
+                                     filter = "string",
+                                     linetype = "string"),
+    returning = porcelain::porcelain_returning_json())
 }
 
 prune_inactive_sessions <- function(cache) {
