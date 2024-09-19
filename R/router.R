@@ -95,7 +95,7 @@ get_individual <- function() {
                                      color = "string",
                                      filter = "string",
                                      linetype = "string"),
-    returning = porcelain::porcelain_returning_json())
+    returning = porcelain::porcelain_returning_json("Plotly"))
 }
 
 prune_inactive_sessions <- function(cache) {
