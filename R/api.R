@@ -219,16 +219,6 @@ target_get_individual <- function(req,
     auto_unbox = TRUE, null = "null")
 }
 
-get_raw <- function(name, dat, disaggregate, xcol) {
-  groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
-  nms <- names(groups)
-  return(lapply(seq_along(groups), function(i) {
-    list(title = name,
-         name = jsonlite::unbox(nms[[i]]),
-         raw = data_out(groups[[i]], xcol))
-  }))
-}
-
 read_dataset <- function(req, name, scale) {
   validate_scale(scale)
   session_id <- get_or_create_session_id(req)
