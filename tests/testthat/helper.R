@@ -23,7 +23,11 @@ local_add_dataset <- function(dat, name, session = session_id, env = parent.fram
   write.csv(dat, file.path(filepath, "data"), row.names = FALSE)
   write("day", file.path(filepath, "xcol"))
   write("number", file.path(filepath, "xtype"))
-  withr::defer(fs::dir_delete(filepath), envir = env)
+  withr::defer({
+    if (dir.exists(filepath)){
+      fs::dir_delete(filepath)
+    }
+  }, envir = env)
   name
 }
 

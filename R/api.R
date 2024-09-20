@@ -71,6 +71,18 @@ target_post_dataset <- function(req, res) {
   response_success(jsonlite::unbox(filename))
 }
 
+target_delete_dataset <- function(name, req) {
+  session_id <- get_or_create_session_id(req)
+  path <- file.path("uploads", session_id, name)
+  if (!file.exists(path)) {
+    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
+                              code = "DATASET_NOT_FOUND", status_code = 404L)
+  }
+
+  fs::dir_delete(path)
+  return("OK")
+}
+
 target_get_dataset <- function(name, req) {
   logger::log_info(paste("Requesting metadata for dataset:", name))
   dataset <- read_dataset(req, name, "natural")
