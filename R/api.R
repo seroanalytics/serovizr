@@ -78,9 +78,9 @@ target_delete_dataset <- function(name, req) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
                               code = "DATASET_NOT_FOUND", status_code = 404L)
   }
-
+  logger::log_info(paste("Deleting dataset: ", name))
   fs::dir_delete(path)
-  return("OK")
+  jsonlite::unbox(name)
 }
 
 target_get_dataset <- function(name, req) {

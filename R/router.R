@@ -11,6 +11,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
       # allow local app and integration tests to access endpoints
       res$setHeader("Access-Control-Allow-Origin", req$HTTP_ORIGIN)
       res$setHeader("Access-Control-Allow-Credentials", "true")
+      res$setHeader("Access-Control-Allow-Methods", c("GET, POST, OPTIONS, PUT, DELETE"))
     }
 
     tryCatch({
@@ -35,6 +36,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle("POST", "/dataset/",
             function(req, res) target_post_dataset(req, res),
             serializer = plumber::serializer_unboxed_json(null = "null"))
+  pr$handle(options_dataset())
   pr$handle(delete_dataset())
   pr$handle(get_dataset())
   pr$handle(get_datasets())
@@ -69,6 +71,13 @@ delete_dataset <- function() {
   porcelain::porcelain_endpoint$new(
     "DELETE", "/dataset/<name>/",
     target_delete_dataset,
+    returning = porcelain::porcelain_returning_json())
+}
+
+options_dataset <- function() {
+  porcelain::porcelain_endpoint$new(
+    "OPTIONS", "/dataset/<name>/",
+    function(name) "OK",
     returning = porcelain::porcelain_returning_json())
 }
 
