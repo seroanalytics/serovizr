@@ -24,14 +24,15 @@ local_add_dataset <- function(dat, name, session = session_id, env = parent.fram
   write("day", file.path(filepath, "xcol"))
   write("number", file.path(filepath, "xtype"))
   withr::defer({
-    if (dir.exists(filepath)){
+    if (dir.exists(filepath)) {
       fs::dir_delete(filepath)
     }
   }, envir = env)
   name
 }
 
-local_POST_dataset_request <- function(dat, filename, xcol = "day",
+local_POST_dataset_request <- function(dat, filename,
+                                       xcol = "day",
                                        env = parent.frame(),
                                        session = session_id,
                                        cookie = "") {
@@ -80,6 +81,40 @@ local_POST_dataset_request_no_xcol <- function(dat, filename,
   make_req("POST", "/dataset/",
            body = request_body,
            CONTENT_LENGTH = nchar(request_body),
+           CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
+}
+
+local_POST_dataset_request_with_name <- function(dat,
+                                                 filename,
+                                                 name,
+                                                 xcol = "day",
+                                                 env = parent.frame(),
+                                                 cookie = cookie) {
+  EOL <- "\r\n"
+  boundary <- "------WebKitFormBoundaryvbfCGA1r00d8B0Vv"
+  request_body <- paste0(boundary, EOL,
+                         sprintf("Content-Disposition: form-data; name=\"file\"; filename=\"%s\"", filename),
+                         EOL,
+                         "Content-Type: text/csv", EOL, EOL,
+                         readr::format_csv(dat, eol = EOL), EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
+                         xcol, EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"name\"", EOL, EOL,
+                         name, EOL,
+                         boundary, "--")
+  filepath <- file.path("uploads", session_id, filename)
+  withr::defer({
+    if (fs::file_exists(filepath)) {
+      fs::file_delete(filepath)
+    }
+  }, envir = env)
+
+  make_req("POST", "/dataset/",
+           body = request_body,
+           CONTENT_LENGTH = nchar(request_body),
+           HTTP_COOKIE = cookie,
            CONTENT_TYPE = "multipart/form-data; boundary=----WebKitFormBoundaryvbfCGA1r00d8B0Vv")
 }
 

@@ -55,7 +55,7 @@ test_that("DELETE /dataset", {
                               HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
   body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$data, "OK")
+  expect_equal(body$data, "testdataset")
 })
 
 test_that("DELETE /dataset returns 404 if not found", {

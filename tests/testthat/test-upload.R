@@ -75,6 +75,20 @@ test_that("can upload dataset with different xcol", {
   expect_equal(res$status, 200)
 })
 
+test_that("can upload dataset with different name", {
+  router <- build_routes(cookie_key)
+  request <- local_POST_dataset_request_with_name(data.frame(biomarker = "ab",
+                                                             day = 1:10,
+                                                             value = 1),
+                                                  "testdataset",
+                                                  name = "othername",
+                                                  cookie = cookie)
+  res <- router$call(request)
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$data, "othername")
+})
+
 test_that("uploading wrong file type returns 400", {
   router <- build_routes()
   request <- local_POST_dataset_request_bad_file()
