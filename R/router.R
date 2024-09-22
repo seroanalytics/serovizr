@@ -11,7 +11,8 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
       # allow local app and integration tests to access endpoints
       res$setHeader("Access-Control-Allow-Origin", req$HTTP_ORIGIN)
       res$setHeader("Access-Control-Allow-Credentials", "true")
-      res$setHeader("Access-Control-Allow-Methods", c("GET, POST, OPTIONS, PUT, DELETE"))
+      res$setHeader("Access-Control-Allow-Methods",
+                    c("GET, POST, OPTIONS, PUT, DELETE"))
     }
 
     tryCatch({
