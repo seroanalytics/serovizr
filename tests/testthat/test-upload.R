@@ -183,15 +183,12 @@ test_that("can get uploaded dataset without covariates", {
   expect_equal(body$data$xcol, "time")
 })
 
-test_that("returns 400 if no xcol", {
+test_that("uses default 'day' if no xcol provided", {
   request <- local_POST_dataset_request_no_xcol(data.frame(biomarker = c("ab", "ba"),
                                                            value = 1,
-                                                           time = 1:10),
+                                                           day = 1:10),
                                                 "testdata")
   router <- build_routes()
   res <- router$call(request)
-  expect_equal(res$status, 400)
-  body <- jsonlite::fromJSON(res$body)
-  expect_equal(body$errors[1, "detail"],
-               "Missing required field: xcol.")
+  expect_equal(res$status, 200)
 })
