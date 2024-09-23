@@ -13,6 +13,7 @@ target_post_dataset <- function(req, res) {
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- parsed$xcol
+  name <- get_dataset_name(parsed)
   if (is.null(xcol)) {
     res$status <- 400L
     msg <- "Missing required field: xcol."
@@ -24,16 +25,10 @@ target_post_dataset <- function(req, res) {
     return(bad_request_response(msg))
   }
   file_body <- utils::read.csv(parsed$file$datapath)
-  filename <- parsed$file$name
-  file_ext <- tools::file_ext(filename)
-  if (nchar(file_ext) > 0) {
-    filename <- stringr::str_remove_all(filename,
-                                        paste0(".", file_ext))
-  }
-  path <- file.path("uploads", session_id, filename)
+  path <- file.path("uploads", session_id, name)
   if (dir.exists(path)) {
     res$status <- 400L
-    msg <- paste(filename, "already exists.",
+    msg <- paste(name, "already exists.",
                  "Please choose a unique name for this dataset.")
     return(bad_request_response(msg))
   }
@@ -63,12 +58,38 @@ target_post_dataset <- function(req, res) {
     xtype <- "number"
   }
 
-  logger::log_info(paste("Saving dataset", filename, "to disk"))
+  logger::log_info(paste("Saving dataset", name, "to disk"))
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
   write(xtype, file.path(path, "xtype"))
-  response_success(jsonlite::unbox(filename))
+  response_success(jsonlite::unbox(name))
+}
+
+target_delete_dataset <- function(name, req) {
+  session_id <- get_or_create_session_id(req)
+  path <- file.path("uploads", session_id, name)
+  if (!file.exists(path)) {
+    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
+                              code = "DATASET_NOT_FOUND", status_code = 404L)
+  }
+  logger::log_info(paste("Deleting dataset: ", name))
+  fs::dir_delete(path)
+  jsonlite::unbox(name)
+}
+
+get_dataset_name <- function(parsed) {
+  name <- parsed$name
+  if (is.null(name)) {
+    filename <- parsed$file$name
+    file_ext <- tools::file_ext(filename)
+    if (nchar(file_ext) > 0) {
+      filename <- stringr::str_remove_all(filename,
+                                          paste0(".", file_ext))
+    }
+    name <- filename
+  }
+  return(name)
 }
 
 target_get_dataset <- function(name, req) {

@@ -46,6 +46,26 @@ test_that("POST /dataset", {
   )
 })
 
+test_that("DELETE /dataset", {
+  router <- build_routes(cookie_key)
+  local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
+                    "testdataset")
+  res <- router$call(make_req("DELETE",
+                              "/dataset/testdataset/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$data, "testdataset")
+})
+
+test_that("DELETE /dataset returns 404 if not found", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("DELETE",
+                              "/dataset/testdataset/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 404)
+})
+
 test_that("GET /datasets", {
   local_add_dataset(data.frame(biomarker = "ab", value = 1, day = 1:10),
                     "testdataset")
