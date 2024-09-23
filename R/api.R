@@ -12,7 +12,7 @@ target_post_dataset <- function(req, res) {
   session_id <- get_or_create_session_id(req)
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
-  xcol <- parsed$xcol
+  xcol <- get_xcol(parsed)
   name <- get_dataset_name(parsed)
   if (is.null(xcol)) {
     res$status <- 400L
@@ -90,6 +90,14 @@ get_dataset_name <- function(parsed) {
     name <- filename
   }
   return(name)
+}
+
+get_xcol <- function(parsed) {
+  xcol <- parsed$xcol
+  if (is.null(xcol)) {
+    xcol <- "day"
+  }
+  return(xcol)
 }
 
 target_get_dataset <- function(name, req) {
