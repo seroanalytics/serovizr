@@ -10,7 +10,7 @@ test_that("GET /", {
   expect_equal(res_endpoint$data, res)
 
   router <- build_routes()
-  res_api <- router$request("GET", "/")
+  res_api <- router$request("GET", "/api/")
   expect_equal(res_api$status, 200)
   expect_equal(res_api$body, res_endpoint$body)
 })
@@ -20,7 +20,7 @@ test_that("GET /version", {
   expect_equal(res, jsonlite::unbox(as.character(packageVersion("serovizr"))))
 
   router <- build_routes()
-  res_api <- router$request("GET", "/version/")
+  res_api <- router$request("GET", "/api/version/")
   expect_equal(res_api$status, 200)
   body <- jsonlite::fromJSON(res_api$body)
   expect_equal(unclass(res), unclass(body$data))
@@ -135,6 +135,6 @@ test_that("GET /dataset/<name>/trace/<biomarker>", {
 
 test_that("requests without trailing slash are redirected", {
   router <- build_routes()
-  res_api <- router$request("GET", "/version")
+  res_api <- router$request("GET", "/api/version")
   expect_equal(res_api$status, 307)
 })
