@@ -14,68 +14,61 @@ target_post_dataset <- function(req, res) {
   parsed <- mime::parse_multipart(req)
   xcol <- get_xcol(parsed)
   name <- get_dataset_name(parsed)
-  if (is.null(xcol)) {
-    res$status <- 400L
-    msg <- "Missing required field: xcol."
-    return(bad_request_response(msg))
-  }
   if (is.null(parsed$file$type) || parsed$file$type != "text/csv") {
-    res$status <- 400L
-    msg <- "Invalid file type; please upload file of type text/csv."
-    return(bad_request_response(msg))
+    return(invalid_file_type(res))
   }
   file_body <- utils::read.csv(parsed$file$datapath)
   path <- file.path("uploads", session_id, name)
   if (dir.exists(path)) {
-    res$status <- 400L
-    msg <- paste(name, "already exists.",
-                 "Please choose a unique name for this dataset.")
-    return(bad_request_response(msg))
+    return(duplicate_dataset_name(res, name))
   }
   required_cols <- c("value", "biomarker", xcol)
   missing_cols <- required_cols[!(required_cols %in% colnames(file_body))]
   if (length(missing_cols) > 0) {
-    res$status <- 400L
-    msg <- paste("Missing required columns:",
-                 paste(missing_cols, collapse = ", "))
-    return(bad_request_response(msg))
+    return(missing_columns(res, missing_cols))
   }
 
-  if (suppressWarnings(all(is.na(as.numeric(file_body[, xcol]))))) {
-    xtype <- "date"
-    suppressWarnings({
-      file_body[, xcol] <- parse_date(file_body[, xcol])
-    })
-    if (all(is.na(file_body[, xcol]))) {
-      res$status <- 400L
-      msg <- paste("Invalid x column values:",
-                   "these should be numbers or dates in a standard format.")
-      return(bad_request_response(msg))
-    }
-    logger::log_info("Detected date values in x column")
-  } else {
-    logger::log_info("Detected numeric values in x column")
-    xtype <- "number"
+  file_body[, xcol] <- get_parsed_values(file_body[, xcol])
+
+  if (all(is.na(file_body[, xcol]))) {
+    return(invalid_xcol(res))
   }
 
   logger::log_info(paste("Saving dataset", name, "to disk"))
+  save_dataset(path, file_body, xcol)
+
+  response_success(jsonlite::unbox(name))
+}
+
+save_dataset <- function(path, file_body, xcol) {
+  xtype <- get_xtype(file_body[, xcol])
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
   write(xtype, file.path(path, "xtype"))
-  response_success(jsonlite::unbox(name))
 }
 
-target_delete_dataset <- function(name, req) {
-  session_id <- get_or_create_session_id(req)
-  path <- file.path("uploads", session_id, name)
-  if (!file.exists(path)) {
-    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
-                              code = "DATASET_NOT_FOUND", status_code = 404L)
+get_parsed_values <- function(raw_values) {
+  suppressWarnings({
+    values <- as.numeric(raw_values)
+  })
+
+  if (all(is.na(values))) {
+    suppressWarnings({
+      values <- parse_date(raw_values)
+    })
   }
-  logger::log_info(paste("Deleting dataset: ", name))
-  fs::dir_delete(path)
-  jsonlite::unbox(name)
+  values
+}
+
+get_xtype <- function(values) {
+  if (is.numeric(values)) {
+    logger::log_info("Detected numeric values in x column")
+    return("number")
+  } else {
+    logger::log_info("Detected date values in x column")
+    return("date")
+  }
 }
 
 get_dataset_name <- function(parsed) {
@@ -98,6 +91,18 @@ get_xcol <- function(parsed) {
     xcol <- "day"
   }
   return(xcol)
+}
+
+target_delete_dataset <- function(name, req) {
+  session_id <- get_or_create_session_id(req)
+  path <- file.path("uploads", session_id, name)
+  if (!file.exists(path)) {
+    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
+                              code = "DATASET_NOT_FOUND", status_code = 404L)
+  }
+  logger::log_info(paste("Deleting dataset: ", name))
+  fs::dir_delete(path)
+  jsonlite::unbox(name)
 }
 
 target_get_dataset <- function(name, req) {
@@ -200,32 +205,14 @@ target_get_individual <- function(req,
   }
 
   dat <- apply_filters(dat, filter)
-  if (is.null(color)) {
-    if (is.null(linetype)) {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
-    } else {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          linetype = .data[[linetype]])
-    }
-  } else {
-    if (is.null(linetype)) {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          color = .data[[color]])
-    } else {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          color = .data[[color]],
-                          linetype = .data[[linetype]])
-    }
-  }
+  aes <- get_aes(color, linetype, xcol)
 
   warnings <- NULL
   ids <- unique(dat[[pidcol]])
-  if (length(ids) > 20) {
-    msg <- paste(length(ids),
-                 "individuals identified; only the first 20 will be shown.")
-    warnings <- c(warnings, msg)
-    dat <- dat[dat[[pidcol]] %in% ids[1:20], ]
-  }
+  page_length <- 20
+  num_pages <- ceiling(length(ids) / page_length)
+  paged_ids <- get_paged_ids(ids, page, page_length)
+  dat <- dat[dat[[pidcol]] %in% paged_ids, ]
 
   # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
   # packages to generate the plotly data and layout objects is a bit slower
@@ -244,8 +231,37 @@ target_get_individual <- function(req,
   jsonlite::toJSON(
     list(data = as.list(q$x$data),
          layout = as.list(q$x$layout),
+         page = page,
+         numPages = num_pages,
          warnings = warnings),
     auto_unbox = TRUE, null = "null")
+}
+
+get_paged_ids <- function(ids, current_page, page_length) {
+  page_start <- ((current_page - 1) * page_length) + 1
+  page_end <- min(length(ids), page_start + (page_length - 1))
+  ids[page_start:page_end]
+}
+
+get_aes <- function(color, linetype, xcol) {
+  if (is.null(color)) {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          linetype = .data[[linetype]])
+    }
+  } else {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]])
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]],
+                          linetype = .data[[linetype]])
+    }
+  }
+  return(aes)
 }
 
 read_dataset <- function(req, name, scale) {
