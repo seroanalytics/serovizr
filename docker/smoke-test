@@ -8,7 +8,7 @@ wait_for()
     echo "waiting up to $TIMEOUT seconds for app"
     start_ts=$(date +%s)
     for i in $(seq $TIMEOUT); do
-        result="$(curl --write-out %{http_code} --silent --output /dev/null http://localhost:8888 2>/dev/null)"
+        result="$(curl --write-out %{http_code} --silent --output /dev/null http://localhost:8888/api/ 2>/dev/null)"
         if [[ $result -eq "200" ]]; then
             end_ts=$(date +%s)
             echo "App available after $((end_ts - start_ts)) seconds"
