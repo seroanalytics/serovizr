@@ -119,7 +119,8 @@ get_individual <- function() {
     porcelain::porcelain_input_query(scale = "string",
                                      color = "string",
                                      filter = "string",
-                                     linetype = "string"),
+                                     linetype = "string",
+                                     page = "numeric"),
     returning = porcelain::porcelain_returning_json("Plotly"))
 }
 

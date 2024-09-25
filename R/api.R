@@ -205,32 +205,14 @@ target_get_individual <- function(req,
   }
 
   dat <- apply_filters(dat, filter)
-  if (is.null(color)) {
-    if (is.null(linetype)) {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
-    } else {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          linetype = .data[[linetype]])
-    }
-  } else {
-    if (is.null(linetype)) {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          color = .data[[color]])
-    } else {
-      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
-                          color = .data[[color]],
-                          linetype = .data[[linetype]])
-    }
-  }
+  aes <- get_aes(color, linetype, xcol)
 
   warnings <- NULL
   ids <- unique(dat[[pidcol]])
-  if (length(ids) > 20) {
-    msg <- paste(length(ids),
-                 "individuals identified; only the first 20 will be shown.")
-    warnings <- c(warnings, msg)
-    dat <- dat[dat[[pidcol]] %in% ids[1:20], ]
-  }
+  page_length <- 20
+  num_pages <- ceiling(length(ids) / page_length)
+  paged_ids <- get_paged_ids(ids, page, page_length)
+  dat <- dat[dat[[pidcol]] %in% paged_ids, ]
 
   # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
   # packages to generate the plotly data and layout objects is a bit slower
@@ -249,8 +231,37 @@ target_get_individual <- function(req,
   jsonlite::toJSON(
     list(data = as.list(q$x$data),
          layout = as.list(q$x$layout),
+         page = page,
+         numPages = num_pages,
          warnings = warnings),
     auto_unbox = TRUE, null = "null")
+}
+
+get_paged_ids <- function(ids, current_page, page_length) {
+  page_start <- ((current_page - 1) * page_length) + 1
+  page_end <- min(length(ids), page_start + (page_length - 1))
+  ids[page_start:page_end]
+}
+
+get_aes <- function(color, linetype, xcol) {
+  if (is.null(color)) {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value)
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          linetype = .data[[linetype]])
+    }
+  } else {
+    if (is.null(linetype)) {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]])
+    } else {
+      aes <- ggplot2::aes(x = .data[[xcol]], y = value,
+                          color = .data[[color]],
+                          linetype = .data[[linetype]])
+    }
+  }
+  return(aes)
 }
 
 read_dataset <- function(req, name, scale) {

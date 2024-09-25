@@ -213,25 +213,3 @@ test_that("can get dataset with dates", {
   expect_equal(unlist(data[1, "x"]), as.numeric(lubridate::ydm(dates)))
   expect_equal(unlist(data[1, "y"]), 1:5)
 })
-
-test_that("only first 20 individuals are returned", {
-  dat <- data.frame(biomarker = "ab",
-                    pid = 1:25,
-                    value = 1,
-                    day = 1:25)
-  router <- build_routes(cookie_key)
-  post_request <- local_POST_dataset_request(dat,
-                                             "testdataset",
-                                             cookie = cookie)
-  expect_equal(router$call(post_request)$status, 200)
-  res <- router$call(make_req("GET",
-                              "/dataset/testdataset/individual/pid/",
-                              HTTP_COOKIE = cookie))
-  expect_equal(res$status, 200)
-  body <- jsonlite::fromJSON(res$body)
-  warnings <- body$data$warnings
-  expect_equal(warnings, "25 individuals identified; only the first 20 will be shown.")
-
-  data <- body$data$data
-  expect_equal(nrow(data), 20)
-})

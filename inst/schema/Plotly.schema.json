@@ -26,8 +26,14 @@
       "items": {
         "type": "string"
       }
+    },
+    "numPages": {
+      "type": "number"
+    },
+    "page": {
+      "type": "number"
     }
   },
-  "required": ["data", "layout", "warnings"],
+  "required": ["data", "layout", "warnings", "numPages", "page"],
   "additionalProperties": false
 }
