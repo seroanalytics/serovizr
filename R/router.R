@@ -32,9 +32,16 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
                                            name = "serovizr",
                                            path = "/"))
 
+  pr$filter("logger", function(req, res) {
+    logger::log_info(paste(as.character(Sys.time()), "-",
+                           req$REQUEST_METHOD, req$PATH_INFO, "-",
+                           req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"))
+    plumber::forward()
+  })
+
   pr$handle(get_root())
   pr$handle(get_version())
-  pr$handle("POST", "/dataset/",
+  pr$handle("POST", "/api/dataset/",
             function(req, res) target_post_dataset(req, res),
             serializer = plumber::serializer_unboxed_json(null = "null"))
   pr$handle(options_dataset())
@@ -48,7 +55,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
 get_root <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/",
+    "/api/",
     target_get_root,
     returning = porcelain::porcelain_returning_json())
 }
@@ -56,28 +63,28 @@ get_root <- function() {
 get_version <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/version/",
+    "/api/version/",
     target_get_version,
     returning = porcelain::porcelain_returning_json("Version"))
 }
 
 get_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "GET", "/dataset/<name>/",
+    "GET", "/api/dataset/<name>/",
     target_get_dataset,
     returning = porcelain::porcelain_returning_json("DatasetMetadata"))
 }
 
 delete_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "DELETE", "/dataset/<name>/",
+    "DELETE", "/api/dataset/<name>/",
     target_delete_dataset,
     returning = porcelain::porcelain_returning_json())
 }
 
 options_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "OPTIONS", "/dataset/<name>/",
+    "OPTIONS", "/api/dataset/<name>/",
     function(name) "OK",
     returning = porcelain::porcelain_returning_json())
 }
@@ -85,7 +92,7 @@ options_dataset <- function() {
 get_datasets <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/datasets/",
+    "/api/datasets/",
     target_get_datasets,
     returning = porcelain::porcelain_returning_json("DatasetNames"))
 }
@@ -93,7 +100,7 @@ get_datasets <- function() {
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/dataset/<name>/trace/<biomarker>/",
+    "/api/dataset/<name>/trace/<biomarker>/",
     target_get_trace,
     porcelain::porcelain_input_query(disaggregate = "string",
                                      filter = "string",
@@ -107,7 +114,7 @@ get_trace <- function() {
 get_individual <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/dataset/<name>/individual/<pidcol>/",
+    "/api/dataset/<name>/individual/<pidcol>/",
     target_get_individual,
     porcelain::porcelain_input_query(scale = "string",
                                      color = "string",
