@@ -31,6 +31,14 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$registerHooks(plumber::session_cookie(cookie_key,
                                            name = "serovizr",
                                            path = "/"))
+
+  pr$filter("logger", function(req, res) {
+    logger::log_info(paste(as.character(Sys.time()), "-",
+                           req$REQUEST_METHOD, req$PATH_INFO, "-",
+                           req$HTTP_USER_AGENT, "@", req$REMOTE_ADDR, "\n"))
+    plumber::forward()
+  })
+
   pr$handle(get_root())
   pr$handle(get_version())
   pr$handle("POST", "/api/dataset/",
