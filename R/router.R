@@ -68,8 +68,8 @@ setup_docs <- function(pr) {
   # already loaded
   library(redoc)
   pr$setDocs("redoc")
-  pr$mount("/schema", plumber::PlumberStatic$new(file.path(system.file("schema",
-                                                                       package = "serovizr"))))
+  pr$mount("/schema", plumber::PlumberStatic$new(
+    file.path(system.file("schema", package = "serovizr"))))
   pr
 }
 
