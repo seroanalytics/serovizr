@@ -96,12 +96,12 @@ get_xcol <- function(parsed) {
 target_delete_dataset <- function(name, req) {
   session_id <- get_or_create_session_id(req)
   path <- file.path("uploads", session_id, name)
-  if (!file.exists(path)) {
-    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
-                              code = "DATASET_NOT_FOUND", status_code = 404L)
+  if (file.exists(path)) {
+    logger::log_info(paste("Deleting dataset:", name))
+    fs::dir_delete(path)
+  } else {
+    logger::log_info(paste("No dataset found with name", name))
   }
-  logger::log_info(paste("Deleting dataset: ", name))
-  fs::dir_delete(path)
   jsonlite::unbox(name)
 }
 

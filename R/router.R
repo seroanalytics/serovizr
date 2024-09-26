@@ -50,6 +50,14 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle(get_datasets())
   pr$handle(get_trace())
   pr$handle(get_individual())
+  api <- yaml::read_yaml(file.path(system.file("spec.yaml",
+                                               package = "serovizr")),
+                         eval.expr = FALSE)
+  pr$setApiSpec(api)
+  pr$setDocs("redoc")
+  pr$mount("/schema", PlumberStatic$new(file.path(system.file("schema",
+                                                   package = "serovizr"))))
+  pr
 }
 
 get_root <- function() {

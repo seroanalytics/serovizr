@@ -1,0 +1,384 @@
+openapi: "3.1.0"
+info:
+  version: 0.0.0
+  title: serovizr
+  description: R API for SeroViz app
+  license:
+    name: GPL (>= 3)
+    url: https://www.gnu.org/licenses/gpl-3.0.en.html
+servers:
+  - url: https://seroviz.seroanalytics.org/api
+  - url: http://localhost:8888
+basePath: "/api"
+paths:
+  /:
+    get:
+      description: Returns welcome message
+      responses:
+        '200':
+          description: Welcome message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    type: string
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data: 'Welcome to serovizr'
+  /version/:
+    get:
+      description: Returns current version of the API package
+      responses:
+        '200':
+          description: Version number
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/Version.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data: '1.0.0'
+  /datasets/:
+    get:
+      description: List available datasets for the given session id
+      responses:
+        '200':
+          description: List of dataset names
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/DatasetNames.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data:
+                      - dataset_one
+                      - another_dataset
+  /dataset/{name}:
+    get:
+      description: Returns metadata about the named dataset
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Dataset metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/DatasetMetadata.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data:
+                      variables:
+                        - name: sex
+                          levels:
+                            - M
+                            - F
+                      biomarkers:
+                        - ab_unit
+                        - ab_spike
+                      xcol: day_of_study
+        '404':
+          description: Dataset with the given name not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
+    delete:
+      description: Delete a dataset if it exists
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          description: Name of deleted dataset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    type: string
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data: 'mydataset'
+                    errors: null
+  /dataset/:
+    post:
+      description: Upload a new dataset
+      requestBody:
+        description: Name of dataset and column to use to index time series
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                xcol:
+                  type: string
+                name:
+                  type: string
+                file:
+                  type: file
+              additionalProperties: false
+      responses:
+        '200':
+          description: Returns name of uploaded dataset
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/UploadResult.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+              examples:
+                one:
+                  value:
+                    status: 'success'
+                    data: 'mynewdataset'
+                    errors: null
+        '400':
+          description: Returns dataset validation errors
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
+              examples:
+                duplicate:
+                  value:
+                    status: 'failure'
+                    data: null
+                    errors:
+                      - error: 'BAD_REQUEST'
+                        detail: 'Missing required columns: biomarker, time'
+  /dataset/{name}/trace/{biomarker}/:
+    get:
+      description: Returns data series for a biomarker
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: Dataset name
+        - in: path
+          name: biomarker
+          schema:
+            type: string
+          required: true
+          description: Biomarker name
+        - in: query
+          schema:
+            type: string
+          name: disaggregate
+          description: Column name to disaggregate by
+        - in: query
+          name: filter
+          schema:
+            type: string
+          description: Column name(s) and value(s) to filter by, in the format 'col:val+col2:val2'
+        - in: query
+          name: scale
+          schema:
+            type: string
+          description: One of 'log', 'log2', or 'natural'
+        - in: query
+          name: method
+          schema:
+            type: string
+          description: Specify a spline function; one of 'loess' or 'gam'. By default, loess will be used if n < 1000, gam otherwise
+        - in: query
+          name: span
+          schema:
+            type: number
+          description: Argument to be passed to 'loess'
+        - in: query
+          name: k
+          schema:
+            type: number
+          description: Argument to be passed to 'gam'
+      responses:
+        '200':
+          description: Raw and spline data series, with any warnings generated by running the spline model
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/DataSeries.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+  /dataset/{name}/individual/{pidcol}/:
+    get:
+      description: Returns plotly config for individual trajectories
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: Dataset name
+        - in: path
+          name: pidcol
+          schema:
+            type: string
+          required: true
+          description: Name of the column containing individual ids
+        - in: query
+          schema:
+            type: string
+          name: scale
+          description: One of 'log', 'log2' or 'natural'
+        - in: query
+          schema:
+            type: string
+          name: color
+          description: Column name to color returned traces by
+        - in: query
+          schema:
+            type: string
+          name: linetype
+          description: Column name to determine the trace linetypes
+        - in: query
+          schema:
+            type: string
+          name: filter
+          description: Column name(s) and value(s) to filter by, in the format 'col:val+col2:val2'
+        - in: query
+          schema:
+            type: number
+          name: page
+          description: Page of results to return (there are 20 individuals to a page)
+      responses:
+        '200':
+          description: Plotly data and config objects for displaying multi-facet plot of individual trajectories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    const: 'success'
+                  data:
+                    $ref: 'schema/Plotly.schema.json'
+                  errors:
+                    type: null
+                required:
+                  - status
+                  - data
+                  - errors
+                additionalProperties: false
+          '400':
+            description: Validation errors
+            content:
+              application/json:
+                schema:
+                  $ref: 'schema/ResponseFailure.schema.json'
+                examples:
+                  id:
+                    value:
+                      errors:
+                        - error: 'BAD_REQUEST'
+                          details: Id column 'person_id' not found.
+          '404':
+            description: Dataset not found
+            content:
+              application/json:
+                schema:
+                  $ref: 'schema/ResponseFailure.schema.json'

@@ -24,6 +24,7 @@ Imports:
     plotly,
     plumber,
     porcelain,
+    redoc,
     rlang,
     stringr,
     tibble
