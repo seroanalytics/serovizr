@@ -66,7 +66,7 @@ setup_docs <- function(pr) {
   pr$setApiSpec(api)
   # this is a bit annoying, but setDocs fails if the package isn't
   # already loaded
-  library(redoc)
+  requireNamespace("redoc")
   pr$setDocs("redoc")
   pr$mount("/schema", plumber::PlumberStatic$new(
     file.path(system.file("schema", package = "serovizr"))))
