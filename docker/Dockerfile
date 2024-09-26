@@ -23,6 +23,7 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         jsonvalidate \
         plotly \
         plumber \
+        redoc \
         remotes \
         Rook \
         stringr \
