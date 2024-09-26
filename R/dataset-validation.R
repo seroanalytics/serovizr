@@ -1,3 +1,12 @@
+# The POST /dataset endpoint isn't using Porcelain, so we can't use
+# porcelain::porcelain_stop when something goes wrong. Instead we have
+# to manually return failure responses with the desired error messages
+bad_request_response <- function(msg) {
+  error <- list(error = "BAD_REQUEST",
+                detail = msg)
+  return(list(status = "failure", errors = list(error), data = NULL))
+}
+
 invalid_file_type <- function(res) {
   res$status <- 400L
   msg <- "Invalid file type; please upload file of type text/csv."

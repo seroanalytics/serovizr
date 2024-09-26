@@ -194,8 +194,6 @@ target_get_individual <- function(req,
                                     color = NULL,
                                     linetype = NULL,
                                     page = 1) {
-  .data <- value <- NULL
-
   data <- read_dataset(req, name, scale)
   dat <- data$data
   xcol <- data$xcol
@@ -244,6 +242,7 @@ get_paged_ids <- function(ids, current_page, page_length) {
 }
 
 get_aes <- function(color, linetype, xcol) {
+  .data <- value <- NULL
   if (is.null(color)) {
     if (is.null(linetype)) {
       aes <- ggplot2::aes(x = .data[[xcol]], y = value)
@@ -345,12 +344,6 @@ apply_filter <- function(filter, dat, cols) {
                               code = "BAD_REQUEST", status_code = 400L)
   }
   dat[dat[filter_var] == filter_level, ]
-}
-
-bad_request_response <- function(msg) {
-  error <- list(error = "BAD_REQUEST",
-                detail = msg)
-  return(list(status = "failure", errors = list(error), data = NULL))
 }
 
 get_or_create_session_id <- function(req) {
