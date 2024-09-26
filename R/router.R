@@ -54,7 +54,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
                                                package = "serovizr")),
                          eval.expr = FALSE)
   pr$setApiSpec(api)
-  require(redoc)
+  library(redoc)
   pr$setDocs("redoc")
   pr$mount("/schema", plumber::PlumberStatic$new(file.path(system.file("schema",
                                                    package = "serovizr"))))
