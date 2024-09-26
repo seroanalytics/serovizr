@@ -64,6 +64,7 @@ test_that("DELETE /dataset returns 200 if dataset doesn't exist", {
                               "/dataset/testdataset/",
                               HTTP_COOKIE = cookie))
   expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
   expect_equal(body$data, "testdataset")
 })
 
