@@ -9,6 +9,6 @@
       "type": ["string", "null"]
     }
   },
-  "additionalProperties": true,
+  "additionalProperties": false,
   "required": [ "error", "detail" ]
 }

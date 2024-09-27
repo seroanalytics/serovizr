@@ -23,10 +23,12 @@ RUN install_packages --repo=https://mrc-ide.r-universe.dev \
         jsonvalidate \
         plotly \
         plumber \
+        redoc \
         remotes \
         Rook \
         stringr \
-        tibble
+        tibble \
+        yaml
 
 RUN Rscript -e "install.packages('remotes')"
 RUN Rscript -e 'remotes::install_github("hillalex/porcelain@i39")'

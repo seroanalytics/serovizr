@@ -58,12 +58,14 @@ test_that("DELETE /dataset", {
   expect_equal(body$data, "testdataset")
 })
 
-test_that("DELETE /dataset returns 404 if not found", {
+test_that("DELETE /dataset returns 200 if dataset doesn't exist", {
   router <- build_routes(cookie_key)
   res <- router$call(make_req("DELETE",
                               "/dataset/testdataset/",
                               HTTP_COOKIE = cookie))
-  expect_equal(res$status, 404)
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$data, "testdataset")
 })
 
 test_that("GET /datasets", {

@@ -8,7 +8,29 @@
 ![GitHub License](https://img.shields.io/github/license/seroanalytics/serovizr)
 <!-- badges: end -->
 
-R API for the SeroViz app. Based on the [porcelain](https://github.com/reside-ic/porcelain) framework.
+R API for the SeroViz app. Based on the [porcelain](https://github.com/reside-ic/porcelain) and [plumber](https://github.com/rstudio/plumber) frameworks.
+
+## API Specification
+Docs are available when running the API locally on port 8888, via 
+```
+http://127.0.0.1:8888/__docs__/
+```
+
+The easiest way to run the API locally is via Docker:
+
+``` 
+ docker run -p 8888:8888 seroanalytics/serovizr:main
+```
+
+Alternatively, to run from R, first clone this repo and then from this directory run:
+
+```r
+  devtools::load_all()
+  serovizr:::main()
+```
+
+The docs are maintained via an [openapi](https://www.openapis.org/) specification
+contained in `inst/spec.yaml`, and [JSON Schema](https://json-schema.org/) files in `inst/schema`.
 
 ## Developing
 Install dependencies with:
@@ -35,20 +57,20 @@ devtools::test()
 
 To build a Docker image:
 
-``` r
+``` 
 ./docker/build
 ```
 
 To push to Dockerhub:
 
-``` r
+``` 
 ./docker/push
 ```
 
 
 To run a built image:
 
-``` r
+``` 
  docker run -p 8888:8888 seroanalytics/serovizr:<branch-name>
 ```
 

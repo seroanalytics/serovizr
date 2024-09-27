@@ -24,9 +24,11 @@ Imports:
     plotly,
     plumber,
     porcelain,
+    redoc,
     rlang,
     stringr,
-    tibble
+    tibble,
+    yaml
 Remotes:
     hillalex/porcelain@i39,
 Suggests:
