@@ -39,6 +39,7 @@ paths:
                   value:
                     status: 'success'
                     data: 'Welcome to serovizr'
+                    errors: null
   /version/:
     get:
       description: Returns current version of the API package
@@ -67,6 +68,7 @@ paths:
                   value:
                     status: 'success'
                     data: '1.0.0'
+                    errors: null
   /datasets/:
     get:
       description: List available datasets for the given session id
@@ -97,6 +99,7 @@ paths:
                     data:
                       - dataset_one
                       - another_dataset
+                    errors: null
   /dataset/{name}:
     get:
       description: Returns metadata about the named dataset
@@ -303,6 +306,56 @@ paths:
                   - data
                   - errors
                 additionalProperties: false
+              examples:
+                hcw:
+                  value:
+                    status: 'success'
+                    data:
+                      - name: H3N2
+                        model:
+                          x:
+                            - 40
+                            - 41
+                          'y':
+                            - 2.8
+                            - 2.9
+                        raw:
+                          x:
+                            - 40
+                            - 40
+                            - 40
+                            - 41
+                            - 41
+                            - 41
+                          'y':
+                            - 2
+                            - 3
+                            - 3
+                            - 4
+                            - 2
+                            - 4
+                        warnings:
+                          - span is too small
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
+              examples:
+                scale:
+                  value:
+                    status: 'failure'
+                    data: null
+                    errors:
+                      - error: 'BAD_REQUEST'
+                        detail: "'scale' must be one of 'log', 'log2', or 'natural'"
+        '404':
+          description: Dataset not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
   /dataset/{name}/individual/{pidcol}/:
     get:
       description: Returns plotly config for individual trajectories
@@ -364,21 +417,72 @@ paths:
                   - data
                   - errors
                 additionalProperties: false
-          '400':
-            description: Validation errors
-            content:
-              application/json:
-                schema:
-                  $ref: 'schema/ResponseFailure.schema.json'
-                examples:
-                  id:
-                    value:
-                      errors:
-                        - error: 'BAD_REQUEST'
-                          details: Id column 'person_id' not found.
-          '404':
-            description: Dataset not found
-            content:
-              application/json:
-                schema:
-                  $ref: 'schema/ResponseFailure.schema.json'
+              examples:
+                hcw:
+                  value:
+                    status: 'success'
+                    data:
+                      data:
+                        - x:
+                            - 1
+                            - 2
+                          y:
+                            - 2
+                            - 3
+                          type: scatter
+                          mode: lines
+                          xaxis: x
+                          yaxis: y
+                        - x:
+                            - 1
+                            - 2
+                          y:
+                            - 5
+                            - 6
+                          type: scatter
+                          mode: lines
+                          xaxis: x2
+                          yaxis: y
+                      layout:
+                        xaxis:
+                          type: linear
+                          autorange: false
+                          range:
+                            - 1
+                            - 2
+                        xaxis2:
+                          type: linear
+                          autorange: false
+                          range:
+                            - 1
+                            - 2
+                        yaxis:
+                          type: linear
+                          autorange: false
+                          range:
+                            - 0
+                            - 6
+                      page: 1
+                      numPages: 1
+                      warnings: null
+                    errors: null
+        '400':
+          description: Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
+              examples:
+                id:
+                  value:
+                    status: 'failure'
+                    data: null
+                    errors:
+                      - error: 'BAD_REQUEST'
+                        details: Id column 'person_id' not found.
+        '404':
+          description: Dataset not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
