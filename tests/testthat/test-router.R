@@ -140,3 +140,28 @@ test_that("requests without trailing slash are redirected", {
   res_api <- router$request("GET", "/api/version")
   expect_equal(res_api$status, 307)
 })
+
+test_that("DELETE /session", {
+  router <- build_routes(cookie_key)
+  local_add_dataset(data.frame(biomarker = c("ab", "ba"),
+                               value = 1,
+                               day = 1:10,
+                               age = "0-5",
+                               sex = c("M", "F")),
+                    "testdataset")
+  res <- router$call(make_req("GET",
+                              "/datasets/",
+                              HTTP_COOKIE = cookie))
+  # expect the session cookie to be set and upload dir created
+  expect_true(grepl("serovizr=[a-zA-Z0-9_%]+;", res$headers[["Set-Cookie"]]))
+  expect_true(fs::dir_exists(file.path("uploads", session_id)))
+
+  res <- router$call(make_req("DELETE",
+                              "/session/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+
+  # expect the session cookie to be unset and upload dir deleted
+  expect_true(grepl("serovizr=;", res$headers[["Set-Cookie"]]))
+  expect_false(fs::dir_exists(file.path("uploads", session_id)))
+})

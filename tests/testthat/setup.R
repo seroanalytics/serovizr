@@ -2,6 +2,8 @@
 set.seed(1)
 dir.create("uploads")
 schema_root <- file.path(system.file("schema", package = "serovizr"))
+
+# test fixtures
 session_id <- generate_session_id()
 cookie_key <- plumber::random_cookie_key()
 session <- list(id = session_id)
