@@ -81,7 +81,8 @@ prune_inactive_sessions <- function(cache) {
   old_sessions <- setdiff(subdirectories, active_sessions)
   if (length(old_sessions) > 0) {
     logger::log_info("Cleaning up expired sessions")
-    lapply(old_sessions, function(x) unlink(file.path("uploads", x),
-                                            recursive = TRUE))
+    lapply(old_sessions, function(x) {
+      unlink(file.path("uploads", x), recursive = TRUE)
+    })
   }
 }
