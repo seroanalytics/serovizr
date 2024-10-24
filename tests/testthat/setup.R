@@ -12,4 +12,4 @@ encoded_cookie_val <- plumber:::encodeCookie(session,
 cookie <- plumber:::cookieToStr("serovizr", encoded_cookie_val)
 
 # Run after all tests
-#withr::defer(fs::dir_delete("uploads"), teardown_env())
+withr::defer(fs::dir_delete("uploads"), teardown_env())
