@@ -69,3 +69,17 @@ get_individual <- function() {
                                      page = "numeric"),
     returning = porcelain::porcelain_returning_json("Plotly"))
 }
+
+options_session <- function() {
+  porcelain::porcelain_endpoint$new(
+    "OPTIONS", "/api/session/",
+    function() "OK",
+    returning = porcelain::porcelain_returning_json())
+}
+
+delete_session <- function() {
+  porcelain::porcelain_endpoint$new(
+    "DELETE", "/api/session/",
+    target_delete_session,
+    returning = porcelain::porcelain_returning_json())
+}

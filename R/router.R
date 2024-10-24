@@ -24,6 +24,8 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle(get_datasets())
   pr$handle(get_trace())
   pr$handle(get_individual())
+  pr$handle(options_session())
+  pr$handle(delete_session())
   setup_docs(pr)
 }
 
@@ -79,6 +81,7 @@ prune_inactive_sessions <- function(cache) {
   old_sessions <- setdiff(subdirectories, active_sessions)
   if (length(old_sessions) > 0) {
     logger::log_info("Cleaning up expired sessions")
-    lapply(old_sessions, function(x) fs::dir_delete(file.path("uploads", x)))
+    lapply(old_sessions, function(x) unlink(file.path("uploads", x),
+                                            recursive = TRUE))
   }
 }

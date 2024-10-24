@@ -235,6 +235,18 @@ target_get_individual <- function(req,
     auto_unbox = TRUE, null = "null")
 }
 
+target_delete_session <- function(req) {
+  session_id <- get_or_create_session_id(req)
+  unlink(file.path("uploads", session_id), recursive = TRUE)
+  req$session <- NULL
+  # The plumber::session_cookie hook looks to see if req$cookies contains a
+  # session cookie, and if the session is null, sends a Set-Cookie header
+  # removing the session cookie. For some rason req$cookies isn't being
+  # populated though, so manually doing it here
+  req$cookies <- plumber:::parseCookies(req$HTTP_COOKIE)
+  jsonlite::unbox("OK")
+}
+
 get_paged_ids <- function(ids, current_page, page_length) {
   page_start <- ((current_page - 1) * page_length) + 1
   page_end <- min(length(ids), page_start + (page_length - 1))
@@ -350,6 +362,7 @@ get_or_create_session_id <- function(req) {
   if (is.null(req$session$id)) {
     logger::log_info("Creating new session id")
     req$session$id <- generate_session_id()
+    dir.create(file.path("uploads", req$session$id), recursive = TRUE)
   }
   as.character(req$session$id)
 }
