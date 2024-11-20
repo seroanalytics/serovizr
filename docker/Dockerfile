@@ -39,6 +39,6 @@ COPY . /src
 
 RUN R CMD INSTALL /src
 
-EXPOSE 8888
+EXPOSE 80
 
-ENTRYPOINT ["/usr/local/bin/seroviz"]
+ENTRYPOINT ["/usr/local/bin/seroviz", "--port=80"]
