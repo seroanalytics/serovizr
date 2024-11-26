@@ -6,7 +6,7 @@ make_req <- function(verb = "GET",
                      ...) {
   req <- as.environment(list(...))
   req$REQUEST_METHOD <- toupper(verb)
-  req$PATH_INFO <- paste0("/api", path)
+  req$PATH_INFO <- path
   req$QUERY_STRING <- qs
   if (is.character(body)) {
     body <- charToRaw(body)

@@ -16,7 +16,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle(get_version())
   # porcelain doesn't support multipart form content yet; for now wire this
   # endpoint up using plumber arguments instead
-  pr$handle("POST", "/api/dataset/", target_post_dataset,
+  pr$handle("POST", "/dataset/", target_post_dataset,
             serializer = plumber::serializer_unboxed_json(null = "null"))
   pr$handle(options_dataset())
   pr$handle(delete_dataset())
