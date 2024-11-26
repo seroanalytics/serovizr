@@ -1,7 +1,7 @@
 get_root <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/api/",
+    "/",
     target_get_root,
     returning = porcelain::porcelain_returning_json())
 }
@@ -9,28 +9,28 @@ get_root <- function() {
 get_version <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/api/version/",
+    "/version/",
     target_get_version,
     returning = porcelain::porcelain_returning_json("Version"))
 }
 
 get_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "GET", "/api/dataset/<name>/",
+    "GET", "/dataset/<name>/",
     target_get_dataset,
     returning = porcelain::porcelain_returning_json("DatasetMetadata"))
 }
 
 delete_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "DELETE", "/api/dataset/<name>/",
+    "DELETE", "/dataset/<name>/",
     target_delete_dataset,
     returning = porcelain::porcelain_returning_json())
 }
 
 options_dataset <- function() {
   porcelain::porcelain_endpoint$new(
-    "OPTIONS", "/api/dataset/<name>/",
+    "OPTIONS", "/dataset/<name>/",
     function(name) "OK",
     returning = porcelain::porcelain_returning_json())
 }
@@ -38,7 +38,7 @@ options_dataset <- function() {
 get_datasets <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/api/datasets/",
+    "/datasets/",
     target_get_datasets,
     returning = porcelain::porcelain_returning_json("DatasetNames"))
 }
@@ -46,7 +46,7 @@ get_datasets <- function() {
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/api/dataset/<name>/trace/<biomarker>/",
+    "/dataset/<name>/trace/<biomarker>/",
     target_get_trace,
     porcelain::porcelain_input_query(disaggregate = "string",
                                      filter = "string",
@@ -60,7 +60,7 @@ get_trace <- function() {
 get_individual <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
-    "/api/dataset/<name>/individual/<pidcol>/",
+    "/dataset/<name>/individual/<pidcol>/",
     target_get_individual,
     porcelain::porcelain_input_query(scale = "string",
                                      color = "string",
@@ -72,14 +72,14 @@ get_individual <- function() {
 
 options_session <- function() {
   porcelain::porcelain_endpoint$new(
-    "OPTIONS", "/api/session/",
+    "OPTIONS", "/session/",
     function() "OK",
     returning = porcelain::porcelain_returning_json())
 }
 
 delete_session <- function() {
   porcelain::porcelain_endpoint$new(
-    "DELETE", "/api/session/",
+    "DELETE", "/session/",
     target_delete_session,
     returning = porcelain::porcelain_returning_json())
 }

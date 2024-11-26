@@ -7,9 +7,8 @@ info:
     name: GPL (>= 3)
     url: https://www.gnu.org/licenses/gpl-3.0.en.html
 servers:
-  - url: https://seroviz.seroanalytics.org/api
+  - url: https://seroviz.seroanalytics.org
   - url: http://localhost:8888
-basePath: "/api"
 paths:
   /:
     get:
