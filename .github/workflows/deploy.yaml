@@ -35,3 +35,23 @@ jobs:
 
       - name: 🚢 Push image
         run: ./docker/push
+
+      - id: sha
+        name: Setup Environment
+        shell: bash
+        run: |
+          if [[ -v "GITHUB_SHA" ]]; then
+            GIT_SHA=${GITHUB_SHA:0:7}
+          else
+            GIT_SHA=$(git rev-parse --short=7 HEAD)
+          fi
+          echo "GIT_SHA=${GIT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Deploy the app
+        uses: digitalocean/app_action/deploy@v2
+        env:
+          IMAGE_TAG_SEROVIZR: ${{ steps.sha.outputs.GIT_SHA }}
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_name: seroviz
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
