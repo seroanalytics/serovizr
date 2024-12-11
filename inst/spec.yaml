@@ -142,6 +142,7 @@ paths:
                         - ab_unit
                         - ab_spike
                       xcol: day_of_study
+                      type: surveillance
         '404':
           description: Dataset with the given name not found
           content:

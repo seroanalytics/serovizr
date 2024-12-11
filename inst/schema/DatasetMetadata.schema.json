@@ -16,12 +16,16 @@
     },
     "xcol": {
       "type": "string"
+    },
+    "type": {
+      "type": "string"
     }
   },
   "additionalProperties": false,
   "required": [
     "variables",
     "biomarkers",
-    "xcol"
+    "xcol",
+    "type"
   ]
 }
