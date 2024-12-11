@@ -18,7 +18,7 @@
       "type": "string"
     },
     "type": {
-      "type": "string"
+      "enum": ["surveillance", "post-exposure"]
     }
   },
   "additionalProperties": false,
