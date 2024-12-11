@@ -13,7 +13,7 @@ target_post_dataset <- function(req, res) {
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- get_xcol(parsed)
-  series_type <- parsed$type
+  series_type <- parsed$series_type
   name <- get_dataset_name(parsed)
   if (is.null(parsed$file$type) || parsed$file$type != "text/csv") {
     return(invalid_file_type(res))
