@@ -54,4 +54,5 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
           app_name: seroviz
+          project_id: ${{ secrets.DIGITALOCEAN_PROJECT_ID}}
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
