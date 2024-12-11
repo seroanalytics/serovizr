@@ -16,12 +16,16 @@
     },
     "xcol": {
       "type": "string"
+    },
+    "type": {
+      "enum": ["surveillance", "post-exposure"]
     }
   },
   "additionalProperties": false,
   "required": [
     "variables",
     "biomarkers",
-    "xcol"
+    "xcol",
+    "type"
   ]
 }

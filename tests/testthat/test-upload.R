@@ -100,13 +100,14 @@ test_that("uploading wrong file type returns 400", {
                "Invalid file type; please upload file of type text/csv.")
 })
 
-test_that("saves file and xcol", {
+test_that("saves file, xcol and series_type", {
   router <- build_routes(cookie_key)
   request <- local_POST_dataset_request(data.frame(biomarker = "ab",
                                                    time = 1:10,
                                                    value = 1),
                                         filename = "testdataset",
                                         xcol = "time",
+                                        series_type = "surveillance",
                                         cookie = cookie)
   res <- router$call(request)
   expect_equal(res$status, 200)
@@ -115,6 +116,8 @@ test_that("saves file and xcol", {
   expect_equal(nrow(dat), 10)
   xcol <- readLines(file.path("uploads", session_id, "/testdataset/xcol"))
   expect_equal(xcol, "time")
+  xcol <- readLines(file.path("uploads", session_id, "/testdataset/series_type"))
+  expect_equal(xcol, "surveillance")
 })
 
 test_that("can get uploaded dataset metadata with default xcol", {
@@ -140,14 +143,16 @@ test_that("can get uploaded dataset metadata with default xcol", {
   expect_equal(body$data$xcol, "day")
 })
 
-test_that("can get uploaded dataset metadata with xcol", {
+test_that("can get uploaded dataset metadata with xcol and series_type", {
   request <- local_POST_dataset_request(data.frame(biomarker = c("ab", "ba"),
                                                    value = 1,
                                                    time = 1:10,
                                                    age = "0-5",
                                                    sex = c("M", "F")),
                                         "testdata",
-                                        xcol = "time", cookie = cookie)
+                                        xcol = "time",
+                                        series_type = "post-exposure",
+                                        cookie = cookie)
   router <- build_routes(cookie_key)
   res <- router$call(request)
   expect_equal(res$status, 200)
@@ -160,6 +165,7 @@ test_that("can get uploaded dataset metadata with xcol", {
   expect_equal(body$data$variables$levels, list(c("0-5"), c("M", "F")))
   expect_equal(body$data$biomarkers, c("ab", "ba"))
   expect_equal(body$data$xcol, "time")
+  expect_equal(body$data$type, "post-exposure")
 })
 
 test_that("can get uploaded dataset without covariates", {

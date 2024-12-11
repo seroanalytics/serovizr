@@ -13,6 +13,7 @@ target_post_dataset <- function(req, res) {
   logger::log_info("Parsing multipart form request")
   parsed <- mime::parse_multipart(req)
   xcol <- get_xcol(parsed)
+  series_type <- parsed$series_type
   name <- get_dataset_name(parsed)
   if (is.null(parsed$file$type) || parsed$file$type != "text/csv") {
     return(invalid_file_type(res))
@@ -35,17 +36,18 @@ target_post_dataset <- function(req, res) {
   }
 
   logger::log_info(paste("Saving dataset", name, "to disk"))
-  save_dataset(path, file_body, xcol)
+  save_dataset(path, file_body, xcol, series_type)
 
   response_success(jsonlite::unbox(name))
 }
 
-save_dataset <- function(path, file_body, xcol) {
+save_dataset <- function(path, file_body, xcol, series_type) {
   xtype <- get_xtype(file_body[, xcol])
   dir.create(path, recursive = TRUE)
   utils::write.csv(file_body, file.path(path, "data"), row.names = FALSE)
   write(xcol, file.path(path, "xcol"))
   write(xtype, file.path(path, "xtype"))
+  write(series_type, file.path(path, "series_type"))
 }
 
 get_parsed_values <- function(raw_values) {
@@ -111,6 +113,7 @@ target_get_dataset <- function(name, req) {
   logger::log_info(paste("Found dataset:", name))
   dat <- dataset$data
   xcol <- dataset$xcol
+  series_type <- dataset$series_type
   cols <- setdiff(colnames(dat), c("value", "biomarker", xcol))
   if (length(cols) == 0) {
     logger::log_info("No covariates detected")
@@ -128,7 +131,8 @@ target_get_dataset <- function(name, req) {
   }
   list(variables = unname(variables),
        biomarkers = biomarkers,
-       xcol = jsonlite::unbox(xcol))
+       xcol = jsonlite::unbox(xcol),
+       type = jsonlite::unbox(series_type))
 }
 
 target_get_datasets <- function(req) {
@@ -293,11 +297,12 @@ read_dataset <- function(req, name, scale) {
   }
   xcol <- readLines(file.path(path, "xcol"))
   xtype <- readLines(file.path(path, "xtype"))
+  series_type <- readLines(file.path(path, "series_type"))
   logger::log_info("Parsing x column values")
   if (xtype == "date") {
     dat[, xcol] <- as.Date(dat[, xcol], origin = "1970-01-01")
   }
-  list(data = dat, xcol = xcol, xtype = xtype)
+  list(data = dat, xcol = xcol, xtype = xtype, series_type = series_type)
 }
 
 model_out <- function(dat, xcol,

@@ -23,6 +23,7 @@ local_add_dataset <- function(dat, name, session = session_id, env = parent.fram
   write.csv(dat, file.path(filepath, "data"), row.names = FALSE)
   write("day", file.path(filepath, "xcol"))
   write("number", file.path(filepath, "xtype"))
+  write("surveillance", file.path(filepath, "series_type"))
   withr::defer({
     if (dir.exists(filepath)) {
       fs::dir_delete(filepath)
@@ -33,6 +34,7 @@ local_add_dataset <- function(dat, name, session = session_id, env = parent.fram
 
 local_POST_dataset_request <- function(dat, filename,
                                        xcol = "day",
+                                       series_type = "surveillance",
                                        env = parent.frame(),
                                        session = session_id,
                                        cookie = "") {
@@ -43,6 +45,9 @@ local_POST_dataset_request <- function(dat, filename,
                          EOL,
                          "Content-Type: text/csv", EOL, EOL,
                          readr::format_csv(dat, eol = EOL), EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"series_type\"", EOL, EOL,
+                         series_type, EOL,
                          boundary, EOL,
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
                          xcol, EOL,
@@ -70,6 +75,9 @@ local_POST_dataset_request_no_xcol <- function(dat, filename,
                          EOL,
                          "Content-Type: text/csv", EOL, EOL,
                          readr::format_csv(dat, eol = EOL), EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"series_type\"", EOL, EOL,
+                         "surveillance", EOL,
                          boundary, "--")
   filepath <- file.path("uploads", session_id, filename)
   withr::defer({
@@ -88,6 +96,7 @@ local_POST_dataset_request_with_name <- function(dat,
                                                  filename,
                                                  name,
                                                  xcol = "day",
+                                                 series_type = "surveillance",
                                                  env = parent.frame(),
                                                  cookie = cookie) {
   EOL <- "\r\n"
@@ -100,6 +109,9 @@ local_POST_dataset_request_with_name <- function(dat,
                          boundary, EOL,
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
                          xcol, EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"series_type\"", EOL, EOL,
+                         series_type, EOL,
                          boundary, EOL,
                          "Content-Disposition: form-data; name=\"name\"", EOL, EOL,
                          name, EOL,
@@ -127,6 +139,9 @@ local_POST_dataset_request_bad_file <- function(env = parent.frame()) {
                          EOL,
                          "Content-Type: image/png", EOL, EOL,
                          "1234", EOL,
+                         boundary, EOL,
+                         "Content-Disposition: form-data; name=\"series_type\"", EOL, EOL,
+                         "surveillance", EOL,
                          boundary, EOL,
                          "Content-Disposition: form-data; name=\"xcol\"", EOL, EOL,
                          "day", EOL,
