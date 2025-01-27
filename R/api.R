@@ -159,7 +159,7 @@ target_get_trace <- function(name,
   xcol <- dataset$xcol
   xtype <- dataset$xtype
   dat <- apply_filters(dat, filter)
-  dat <- dat[dat["biomarker"] == biomarker,]
+  dat <- dat[dat["biomarker"] == biomarker, ]
   if (length(disaggregate) > 0) {
     logger::log_info(paste("Disaggregating by variables:", disaggregate))
     groups <- split(dat, eval(parse(text = paste("~", disaggregate))))
@@ -194,7 +194,9 @@ target_get_trace <- function(name,
 
 target_get_public_datasets <- function() {
   names <- list.files(file.path("public"))
-  descriptions <- sapply(names, function(x) readLines(file.path("public", x, "description")))
+  descriptions <- sapply(names, function(x) paste(
+    readLines(file.path("public", x, "description")),
+    collapse = "\n"))
   data.frame(name = names, description = descriptions)
 }
 
@@ -223,7 +225,7 @@ target_get_individual <- function(req,
   page_length <- 20
   num_pages <- ceiling(length(ids) / page_length)
   paged_ids <- get_paged_ids(ids, page, page_length)
-  dat <- dat[dat[[pidcol]] %in% paged_ids,]
+  dat <- dat[dat[[pidcol]] %in% paged_ids, ]
 
   # Facets in plotlyjs are quite a pain. Using ggplot2 and plotly R
   # packages to generate the plotly data and layout objects is a bit slower
@@ -383,7 +385,7 @@ apply_filter <- function(filter, dat, cols) {
                                     "not found in data"),
                               code = "BAD_REQUEST", status_code = 400L)
   }
-  dat[dat[filter_var] == filter_level,]
+  dat[dat[filter_var] == filter_level, ]
 }
 
 get_or_create_session_id <- function(req) {
