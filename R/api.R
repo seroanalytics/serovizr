@@ -297,8 +297,7 @@ read_dataset <- function(req, name, scale, public) {
   if (public) {
     path <- get_public_path(name)
   } else {
-    session_id <- get_or_create_session_id(req)
-    path <- file.path("uploads", session_id, name)
+    path <- get_user_path(req, name)
   }
   if (!file.exists(path)) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
