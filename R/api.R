@@ -203,6 +203,10 @@ target_get_public_datasets <- function() {
 
 target_download_public_dataset <- function(name) {
   path <- file.path("public", name, "data")
+  if (!file.exists(path)) {
+    porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
+                              code = "DATASET_NOT_FOUND", status_code = 404L)
+  }
   filename <- paste0(name, ".csv")
   bytes <- readBin(path, "raw", n = file.size(path))
   bytes <- porcelain::porcelain_add_headers(bytes, list(
