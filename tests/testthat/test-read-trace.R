@@ -317,3 +317,16 @@ test_that("errors for disaggregated traces are returned as warnings", {
                     "day has insufficient unique values to support 10 knots: reduce k."))
   expect_true(all(is.na(data$model)))
 })
+
+
+test_that("can get public dataset", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/test/trace/sVNT/",
+                              qs = "public=TRUE",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data
+  expect_equal(nrow(data), 1)
+})

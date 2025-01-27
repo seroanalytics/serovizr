@@ -107,9 +107,9 @@ target_delete_dataset <- function(name, req) {
   jsonlite::unbox(name)
 }
 
-target_get_dataset <- function(name, req) {
+target_get_dataset <- function(name, req, public = FALSE) {
   logger::log_info(paste("Requesting metadata for dataset:", name))
-  dataset <- read_dataset(req, name, "natural")
+  dataset <- read_dataset(req, name, "natural", public)
   logger::log_info(paste("Found dataset:", name))
   dat <- dataset$data
   xcol <- dataset$xcol
@@ -140,6 +140,7 @@ target_get_datasets <- function(req) {
   list.files(file.path("uploads", session_id))
 }
 
+
 target_get_trace <- function(name,
                              biomarker,
                              req,
@@ -148,11 +149,12 @@ target_get_trace <- function(name,
                              scale = "natural",
                              method = "auto",
                              span = 0.75,
-                             k = 10) {
+                             k = 10,
+                             public = FALSE) {
   biomarker <- httpuv::decodeURIComponent(biomarker)
   logger::log_info(paste("Requesting data from", name,
                          "with biomarker", biomarker))
-  dataset <- read_dataset(req, name, scale)
+  dataset <- read_dataset(req, name, scale, public)
   dat <- dataset$data
   xcol <- dataset$xcol
   xtype <- dataset$xtype
@@ -190,20 +192,30 @@ target_get_trace <- function(name,
   }
 }
 
+target_get_public_datasets <- function() {
+  names <- list.files(file.path("public"))
+  descriptions <- sapply(names, function(x) {
+    paste(readLines(file.path("public", x, "description")),
+          collapse = "\n")
+  })
+  data.frame(name = names, description = descriptions)
+}
+
 target_get_individual <- function(req,
-                                    name,
-                                    pidcol,
-                                    scale = "natural",
-                                    filter = NULL,
-                                    color = NULL,
-                                    linetype = NULL,
-                                    page = 1) {
-  data <- read_dataset(req, name, scale)
+                                  name,
+                                  pidcol,
+                                  scale = "natural",
+                                  filter = NULL,
+                                  color = NULL,
+                                  linetype = NULL,
+                                  page = 1,
+                                  public = FALSE) {
+  data <- read_dataset(req, name, scale, public)
   dat <- data$data
   xcol <- data$xcol
 
   if (!(pidcol %in% colnames(dat))) {
-      porcelain::porcelain_stop(sprintf("Id column '%s' not found.", pidcol))
+    porcelain::porcelain_stop(sprintf("Id column '%s' not found.", pidcol))
   }
 
   dat <- apply_filters(dat, filter)
@@ -279,10 +291,14 @@ get_aes <- function(color, linetype, xcol) {
   return(aes)
 }
 
-read_dataset <- function(req, name, scale) {
+read_dataset <- function(req, name, scale, public) {
   validate_scale(scale)
-  session_id <- get_or_create_session_id(req)
-  path <- file.path("uploads", session_id, name)
+
+  if (public) {
+    path <- get_public_path(name)
+  } else {
+    path <- get_user_path(req, name)
+  }
   if (!file.exists(path)) {
     porcelain::porcelain_stop(paste("Did not find dataset with name:", name),
                               code = "DATASET_NOT_FOUND", status_code = 404L)
@@ -303,6 +319,15 @@ read_dataset <- function(req, name, scale) {
     dat[, xcol] <- as.Date(dat[, xcol], origin = "1970-01-01")
   }
   list(data = dat, xcol = xcol, xtype = xtype, series_type = series_type)
+}
+
+get_user_path <- function(req, name) {
+  session_id <- get_or_create_session_id(req)
+  file.path("uploads", session_id, name)
+}
+
+get_public_path <- function(name) {
+  file.path("public", name)
 }
 
 model_out <- function(dat, xcol,

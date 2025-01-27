@@ -213,3 +213,15 @@ test_that("can get dataset with dates", {
   expect_equal(unlist(data[1, "x"]), as.numeric(lubridate::ydm(dates)))
   expect_equal(unlist(data[1, "y"]), 1:5)
 })
+
+test_that("can get public data", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/dataset/test/individual/id/",
+                              qs = "public=TRUE",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  data <- body$data$data
+  expect_equal(nrow(data), 20)
+})
