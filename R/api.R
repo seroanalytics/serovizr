@@ -194,9 +194,10 @@ target_get_trace <- function(name,
 
 target_get_public_datasets <- function() {
   names <- list.files(file.path("public"))
-  descriptions <- sapply(names, function(x) paste(
-    readLines(file.path("public", x, "description")),
-    collapse = "\n"))
+  descriptions <- sapply(names, function(x) {
+    paste(readLines(file.path("public", x, "description")),
+          collapse = "\n")
+  })
   data.frame(name = names, description = descriptions)
 }
 
