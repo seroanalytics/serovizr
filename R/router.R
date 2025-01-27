@@ -22,6 +22,7 @@ build_routes <- function(cookie_key = plumber::random_cookie_key(),
   pr$handle(delete_dataset())
   pr$handle(get_dataset())
   pr$handle(get_public_datasets())
+  pr$handle(download_public_dataset())
   pr$handle(get_datasets())
   pr$handle(get_trace())
   pr$handle(get_individual())

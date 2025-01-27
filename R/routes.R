@@ -52,6 +52,14 @@ get_public_datasets <- function() {
     returning = porcelain::porcelain_returning_json("PublicDatasets"))
 }
 
+download_public_dataset <- function() {
+  porcelain::porcelain_endpoint$new(
+    "GET",
+    "/public/dataset/<name>/",
+    target_download_public_dataset,
+    returning = porcelain::porcelain_returning_binary())
+}
+
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",

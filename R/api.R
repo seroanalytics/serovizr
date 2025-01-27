@@ -201,6 +201,16 @@ target_get_public_datasets <- function() {
   data.frame(name = names, description = descriptions)
 }
 
+target_download_public_dataset <- function(name) {
+  path <- file.path("public", name, "data")
+  filename <- paste0(name, ".csv")
+  bytes <- readBin(path, "raw", n = file.size(path))
+  bytes <- porcelain::porcelain_add_headers(bytes, list(
+    "Content-Disposition" = sprintf('attachment; filename="%s"', filename),
+    "Content-Length" = length(bytes)))
+  bytes
+}
+
 target_get_individual <- function(req,
                                   name,
                                   pidcol,
