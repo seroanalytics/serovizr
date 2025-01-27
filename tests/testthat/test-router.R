@@ -82,6 +82,17 @@ test_that("GET /datasets", {
   expect_equal(body$data, c("anotherdataset", "testdataset"))
 })
 
+test_that("GET /public/datasets", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/public/datasets/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  body <- jsonlite::fromJSON(res$body)
+  expect_equal(body$data$name, "test")
+  expect_equal(body$data$description, "test description")
+})
+
 test_that("GET /dataset<name>", {
   local_add_dataset(data.frame(biomarker = c("ab", "ba"),
                                value = 1,

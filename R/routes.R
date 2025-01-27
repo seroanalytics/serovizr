@@ -18,6 +18,7 @@ get_dataset <- function() {
   porcelain::porcelain_endpoint$new(
     "GET", "/dataset/<name>/",
     target_get_dataset,
+    porcelain::porcelain_input_query(public = "logical"),
     returning = porcelain::porcelain_returning_json("DatasetMetadata"))
 }
 
@@ -43,6 +44,14 @@ get_datasets <- function() {
     returning = porcelain::porcelain_returning_json("DatasetNames"))
 }
 
+get_public_datasets <- function() {
+  porcelain::porcelain_endpoint$new(
+    "GET",
+    "/public/datasets/",
+    target_get_public_datasets,
+    returning = porcelain::porcelain_returning_json("PublicDatasets"))
+}
+
 get_trace <- function() {
   porcelain::porcelain_endpoint$new(
     "GET",
@@ -53,7 +62,8 @@ get_trace <- function() {
                                      scale = "string",
                                      method = "string",
                                      span = "numeric",
-                                     k = "numeric"),
+                                     k = "numeric",
+                                     public = "string"),
     returning = porcelain::porcelain_returning_json("DataSeries"))
 }
 
@@ -66,7 +76,8 @@ get_individual <- function() {
                                      color = "string",
                                      filter = "string",
                                      linetype = "string",
-                                     page = "numeric"),
+                                     page = "numeric",
+                                     public = "string"),
     returning = porcelain::porcelain_returning_json("Plotly"))
 }
 
