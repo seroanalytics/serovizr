@@ -36,9 +36,9 @@ RUN Rscript -e 'remotes::install_github("hillalex/porcelain@i39")'
 WORKDIR /serovizr
 
 COPY . /src
-COPY public /serovizr/public
 
 RUN R CMD INSTALL /src
+COPY public /serovizr/public
 
 EXPOSE 8888
 
