@@ -101,6 +101,22 @@ paths:
                       - name: another_dataset
                         description: dataset from paper
                     errors: null
+  /public/dataset/{name}/:
+    get:
+      description: Download publicly available dataset as CSV
+      responses:
+        '200':
+          description: CSV file
+          content:
+            text/csv:
+              schema:
+                type: string
+        '404':
+          description: Dataset not found
+          content:
+            application/json:
+              schema:
+                $ref: 'schema/ResponseFailure.schema.json'
   /datasets/:
     get:
       description: List available datasets for the given session id

@@ -93,7 +93,24 @@ test_that("GET /public/datasets", {
   expect_equal(body$data$description, "test description")
 })
 
-test_that("GET /dataset<name>", {
+test_that("GET /public/dataset/<name>", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/public/dataset/test/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 200)
+  expect_equal(res$headers[["Content-Disposition"]], "attachment; filename=\"test.csv\"")
+})
+
+test_that("GET /public/dataset/<name> returns 404 when dataset not found", {
+  router <- build_routes(cookie_key)
+  res <- router$call(make_req("GET",
+                              "/public/dataset/bad/",
+                              HTTP_COOKIE = cookie))
+  expect_equal(res$status, 404)
+})
+
+test_that("GET /dataset/<name>", {
   local_add_dataset(data.frame(biomarker = c("ab", "ba"),
                                value = 1,
                                day = 1:10,
