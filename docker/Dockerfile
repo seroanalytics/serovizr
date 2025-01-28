@@ -38,6 +38,7 @@ WORKDIR /serovizr
 COPY . /src
 
 RUN R CMD INSTALL /src
+COPY public /serovizr/public
 
 EXPOSE 8888
 
